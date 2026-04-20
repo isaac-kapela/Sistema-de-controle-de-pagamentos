@@ -24,4 +24,11 @@ export const togglePayment = (id, field) =>
 export const generatePayments = (month, year) =>
   api.post('/payments/generate', { month, year }).then((r) => r.data);
 
+// ─── Email ───────────────────────────────────────────────────
+export const sendCharge = (paymentId) =>
+  api.post(`/email/charge/${paymentId}`).then((r) => r.data);
+
+export const sendChargeAll = (month, year) =>
+  api.post('/email/charge-all', { month, year }).then((r) => r.data);
+
 export default api;

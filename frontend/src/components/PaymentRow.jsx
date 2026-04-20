@@ -1,6 +1,7 @@
 import React from 'react';
-import { deleteUser } from '../services/api';
+import { deleteUser, sendCharge } from '../services/api';
 import toast from 'react-hot-toast';
+import { useState } from 'react';
 
 const fmt = (v) =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -9,6 +10,20 @@ export default function PaymentRow({ payment, onToggle, onDeleted, isAdmin }) {
   const { userId, fullyPaid, gasolinaPaid, drivePaid, amount, amountPaid, isDriver } = payment;
 
   const statusColor = fullyPaid ? 'var(--success)' : 'var(--danger)';
+
+  const [sending, setSending] = useState(false);
+
+  const handleCharge = async () => {
+    setSending(true);
+    try {
+      await sendCharge(payment._id);
+      toast.success(`Cobrança enviada para ${userId?.email}`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erro ao enviar email.');
+    } finally {
+      setSending(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!window.confirm(`Remover "${userId?.name}" do sistema? Esta ação não pode ser desfeita.`)) return;
@@ -75,6 +90,16 @@ export default function PaymentRow({ payment, onToggle, onDeleted, isAdmin }) {
             >
               {fullyPaid ? 'Desfazer' : 'Marcar pago'}
             </button>
+            {!fullyPaid && (
+              <button
+                onClick={handleCharge}
+                disabled={sending}
+                style={{ ...styles.btn, background: 'transparent', border: '1px solid #2e2e2e', color: 'var(--text-muted)', padding: '6px 10px', opacity: sending ? 0.5 : 1 }}
+                title="Enviar cobrança por email"
+              >
+                ✉
+              </button>
+            )}
             <button
               onClick={handleDelete}
               style={{ ...styles.btn, background: 'transparent', border: '1px solid #3a3a3a', color: 'var(--danger)', padding: '6px 10px' }}

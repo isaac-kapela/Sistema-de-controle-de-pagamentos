@@ -7,6 +7,8 @@ import PaymentTable from './components/PaymentTable';
 import AddUserModal from './components/AddUserModal';
 import LoginModal from './components/LoginModal';
 import { exportYearToExcel } from './services/exportExcel';
+import { sendChargeAll } from './services/api';
+import toast from 'react-hot-toast';
 
 const MONTHS = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -22,6 +24,20 @@ export default function App() {
   const [exporting, setExporting] = useState(false);
   const [exportProgress, setExportProgress] = useState(0);
   const { isAdmin, logout } = useAuth();
+  const [charging, setCharging] = useState(false);
+
+  const handleChargeAll = async () => {
+    if (!window.confirm('Enviar cobrança por email para todos os pendentes do mês?')) return;
+    setCharging(true);
+    try {
+      const res = await sendChargeAll(month, year);
+      toast.success(res.message);
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erro ao enviar emails.');
+    } finally {
+      setCharging(false);
+    }
+  };
 
   const handleExportYear = async () => {
     setExporting(true);
@@ -64,9 +80,18 @@ export default function App() {
             {exporting ? `Exportando ${exportProgress}/12...` : `Exportar ${year}`}
           </button>
           {isAdmin && (
-            <button onClick={() => setShowModal(true)} style={styles.addBtn}>
-              + Novo Membro
-            </button>
+            <>
+              <button
+                onClick={handleChargeAll}
+                disabled={charging}
+                style={{ ...styles.exportBtn, opacity: charging ? 0.6 : 1 }}
+              >
+                {charging ? 'Enviando…' : 'Cobrar todos'}
+              </button>
+              <button onClick={() => setShowModal(true)} style={styles.addBtn}>
+                + Novo Membro
+              </button>
+            </>
           )}
           {isAdmin ? (
             <button onClick={logout} style={styles.logoutBtn}>
