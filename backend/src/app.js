@@ -5,6 +5,7 @@ const cors = require('cors');
 
 const usersRouter = require('./routes/users');
 const paymentsRouter = require('./routes/payments');
+const authRouter = require('./routes/auth');
 
 const app = express();
 
@@ -12,6 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 // Rotas
+app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/payments', paymentsRouter);
 
