@@ -6,6 +6,7 @@ const cors = require('cors');
 const usersRouter = require('./routes/users');
 const paymentsRouter = require('./routes/payments');
 const authRouter = require('./routes/auth');
+const emailRouter = require('./routes/email');
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use(express.json());
 app.use('/api/auth', authRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/payments', paymentsRouter);
+app.use('/api/email', emailRouter);
 
 // Health check
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
