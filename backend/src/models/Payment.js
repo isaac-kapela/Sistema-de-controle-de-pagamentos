@@ -28,6 +28,7 @@ const paymentSchema = new mongoose.Schema(
     gasolinaPaidAt: {
       type: Date,
       default: null,
+      
     },
     drivePaid: {
       type: Boolean,
