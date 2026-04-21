@@ -1,5 +1,6 @@
 const Payment = require('../models/Payment');
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
 
 const GASOLINA = 5.0;
 const DRIVE = 2.27;
@@ -66,6 +67,23 @@ const togglePayment = async (req, res) => {
 
     const payment = await Payment.findById(req.params.id);
     if (!payment) return res.status(404).json({ error: 'Pagamento não encontrado.' });
+
+    // Verifica se é uma ação de "desfazer" (remover marcação de pago)
+    const isUndo =
+      (field === 'all' && payment.fullyPaid) ||
+      (field === 'gasolina' && payment.gasolinaPaid) ||
+      (field === 'drive' && payment.drivePaid);
+
+    if (isUndo) {
+      const header = req.headers.authorization;
+      const token = header && header.startsWith('Bearer ') ? header.split(' ')[1] : null;
+      try {
+        if (!token) throw new Error('sem token');
+        jwt.verify(token, process.env.JWT_SECRET);
+      } catch {
+        return res.status(403).json({ error: 'Apenas admins podem desfazer pagamentos.' });
+      }
+    }
 
     if (field === 'all') {
       // Toggle geral: se tudo está pago, desfaz; caso contrário, marca tudo

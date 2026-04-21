@@ -48,7 +48,7 @@ export default function PaymentTable({ payments, onToggle, onDeleted, isAdmin })
               <th style={styles.th}>Gasolina (R$5)</th>
               <th style={styles.th}>Drive (R$2,27)</th>
               <th style={styles.th}>Status</th>
-              {isAdmin && <th style={styles.th}></th>}
+              <th style={styles.th}></th>
             </tr>
           </thead>
           <tbody>

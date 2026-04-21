@@ -5,6 +5,6 @@ const { requireAuth } = require('../middleware/auth');
 
 router.get('/', listPayments);
 router.post('/generate', generatePayments);
-router.patch('/:id/toggle', requireAuth, togglePayment);
+router.patch('/:id/toggle', togglePayment);
 
 module.exports = router;

@@ -80,26 +80,36 @@ export default function PaymentRow({ payment, onToggle, onDeleted, isAdmin }) {
         </span>
       </td>
 
-      {/* Ações — só admins */}
-      {isAdmin && (
-        <td style={styles.td}>
-          <div style={{ display: 'flex', gap: 6 }}>
+      {/* Ações */}
+      <td style={styles.td}>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {!fullyPaid && (
             <button
               onClick={() => onToggle(payment._id, 'all')}
-              style={{ ...styles.btn, background: fullyPaid ? '#2a2a2a' : 'var(--success-dark)', border: fullyPaid ? '1px solid #3a3a3a' : 'none' }}
+              style={{ ...styles.btn, background: 'var(--success-dark)' }}
             >
-              {fullyPaid ? 'Desfazer' : 'Marcar pago'}
+              Marcar pago
             </button>
-            {!fullyPaid && (
-              <button
-                onClick={handleCharge}
-                disabled={sending}
-                style={{ ...styles.btn, background: 'transparent', border: '1px solid #2e2e2e', color: 'var(--text-muted)', padding: '6px 10px', opacity: sending ? 0.5 : 1 }}
-                title="Enviar cobrança por email"
-              >
-                ✉
-              </button>
-            )}
+          )}
+          {isAdmin && fullyPaid && (
+            <button
+              onClick={() => onToggle(payment._id, 'all')}
+              style={{ ...styles.btn, background: '#2a2a2a', border: '1px solid #3a3a3a' }}
+            >
+              Desfazer
+            </button>
+          )}
+          {isAdmin && !fullyPaid && (
+            <button
+              onClick={handleCharge}
+              disabled={sending}
+              style={{ ...styles.btn, background: 'transparent', border: '1px solid #2e2e2e', color: 'var(--text-muted)', padding: '6px 10px', opacity: sending ? 0.5 : 1 }}
+              title="Enviar cobrança por email"
+            >
+              ✉
+            </button>
+          )}
+          {isAdmin && (
             <button
               onClick={handleDelete}
               style={{ ...styles.btn, background: 'transparent', border: '1px solid #3a3a3a', color: 'var(--danger)', padding: '6px 10px' }}
@@ -107,9 +117,9 @@ export default function PaymentRow({ payment, onToggle, onDeleted, isAdmin }) {
             >
               ✕
             </button>
-          </div>
-        </td>
-      )}
+          )}
+        </div>
+      </td>
     </tr>
   );
 }
