@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import PaymentRow from './PaymentRow';
+import PaymentRow, { PaymentCard } from './PaymentRow';
 
 const FILTERS = ['Todos', 'Pagos', 'Pendentes'];
 
@@ -37,8 +37,8 @@ export default function PaymentTable({ payments, onToggle, onDeleted, isAdmin })
         </div>
       </div>
 
-      {/* Tabela */}
-      <div style={styles.tableWrap}>
+      {/* Tabela — desktop */}
+      <div className="payment-table-desktop" style={styles.tableWrap}>
         <table style={styles.table}>
           <thead>
             <tr style={styles.thead}>
@@ -65,6 +65,19 @@ export default function PaymentTable({ payments, onToggle, onDeleted, isAdmin })
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Cards — mobile */}
+      <div className="payment-cards-mobile">
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 32, color: 'var(--text-muted)' }}>
+            Nenhum resultado encontrado.
+          </div>
+        ) : (
+          filtered.map((p) => (
+            <PaymentCard key={p._id} payment={p} onToggle={onToggle} onDeleted={onDeleted} isAdmin={isAdmin} />
+          ))
+        )}
       </div>
     </div>
   );
@@ -112,9 +125,7 @@ const styles = {
     background: 'var(--primary)',
     color: '#fff',
   },
-  tableWrap: {
-    overflowX: 'auto',
-  },
+  tableWrap: {},
   table: {
     width: '100%',
     borderCollapse: 'collapse',

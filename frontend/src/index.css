@@ -45,3 +45,99 @@ input, select {
 }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Layout ── */
+.app-header {
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+}
+
+.app-main {
+  flex: 1;
+  padding: 24px 32px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.app-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* ── Payment table / cards ── */
+.payment-table-desktop {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.payment-cards-mobile {
+  display: none;
+}
+
+/* ── Mobile ─────────────────────────── */
+@media (max-width: 640px) {
+  .app-header {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .app-main {
+    padding: 12px 16px;
+  }
+
+  .header-actions {
+    width: 100%;
+    gap: 8px;
+  }
+
+  /* Botões e selects no header tomam metade da linha */
+  .header-actions > button,
+  .header-actions > div {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 0;
+  }
+
+  /* MonthSelector (wrapper com 2 selects) fica full-width */
+  .header-actions > .month-selector {
+    flex: 1 1 100%;
+  }
+
+  .month-selector {
+    width: 100%;
+  }
+
+  .month-selector select {
+    flex: 1;
+  }
+
+  .app-title {
+    font-size: 17px;
+  }
+
+  /* Tabela oculta, cards visíveis */
+  .payment-table-desktop {
+    display: none;
+  }
+
+  .payment-cards-mobile {
+    display: block;
+  }
+}

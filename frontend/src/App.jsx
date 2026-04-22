@@ -60,17 +60,17 @@ export default function App() {
   return (
     <div style={styles.page}>
       {/* Header */}
-      <header style={styles.header}>
+      <header className="app-header">
         <div style={styles.brand}>
           <img src="/logo.png" alt="Logo" style={styles.logo} />
           <div>
-            <h1 style={styles.title}>Controle de Pagamentos</h1>
+            <h1 className="app-title">Controle de Pagamentos</h1>
             <p style={styles.subtitle}>
               {MONTHS[month - 1]} de {year}
             </p>
           </div>
         </div>
-        <div style={styles.headerActions}>
+        <div className="header-actions">
           <MonthSelector month={month} year={year} onChange={handleMonthChange} />
           <button
             onClick={handleExportYear}
@@ -106,7 +106,7 @@ export default function App() {
       </header>
 
       {/* Conteúdo */}
-      <main style={styles.main}>
+      <main className="app-main">
         {loading && (
           <div style={styles.center}>
             <div style={styles.spinner} />
@@ -145,17 +145,6 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
   },
-  header: {
-    background: 'var(--bg-card)',
-    borderBottom: '1px solid var(--border)',
-    padding: '20px 32px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 16,
-    boxShadow: '0 2px 12px rgba(0,0,0,0.2)',
-  },
   brand: {
     display: 'flex',
     alignItems: 'center',
@@ -167,21 +156,10 @@ const styles = {
     objectFit: 'contain',
     borderRadius: 8,
   },
-  title: {
-    fontSize: 22,
-    fontWeight: 700,
-    letterSpacing: '-0.02em',
-  },
   subtitle: {
     color: 'var(--text-muted)',
     fontSize: 13,
     marginTop: 2,
-  },
-  headerActions: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
   },
   exportBtn: {
     background: 'transparent',
@@ -221,13 +199,6 @@ const styles = {
     fontSize: 14,
     fontWeight: 500,
   },
-  main: {
-    flex: 1,
-    padding: '24px 32px',
-    maxWidth: 1200,
-    width: '100%',
-    margin: '0 auto',
-  },
   center: {
     display: 'flex',
     flexDirection: 'column',
@@ -263,7 +234,3 @@ const styles = {
   },
 };
 
-// Inject keyframes
-const style = document.createElement('style');
-style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
-document.head.appendChild(style);

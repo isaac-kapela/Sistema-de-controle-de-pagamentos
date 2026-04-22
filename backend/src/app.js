@@ -3,36 +3,52 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
-const usersRouter = require('./routes/users');
-const paymentsRouter = require('./routes/payments');
-const authRouter = require('./routes/auth');
-const emailRouter = require('./routes/email');
-
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+// Conexão com MongoDB com cache (funciona em ambiente serverless)
+let cachedConn = null;
+
+async function connectDB() {
+  if (cachedConn) return cachedConn;
+  cachedConn = await mongoose.connect(process.env.MONGODB_URI);
+  return cachedConn;
+}
+
+// Garante conexão com MongoDB antes de cada request
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('Erro ao conectar ao MongoDB:', err.message);
+    res.status(500).json({ error: 'Erro de conexão com banco de dados' });
+  }
+});
+
 // Rotas
-app.use('/api/auth', authRouter);
-app.use('/api/users', usersRouter);
-app.use('/api/payments', paymentsRouter);
-app.use('/api/email', emailRouter);
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
+app.use('/api/payments', require('./routes/payments'));
+app.use('/api/email', require('./routes/email'));
 
 // Health check
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
 
-// Conexão com MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/pagamentos';
-const PORT = process.env.PORT || 3001;
+// Inicia servidor apenas em desenvolvimento local
+if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
+  connectDB()
+    .then(() => {
+      console.log('Conectado ao MongoDB');
+      app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
+    })
+    .catch((err) => {
+      console.error('Erro ao conectar ao MongoDB:', err.message);
+      process.exit(1);
+    });
+}
 
-mongoose
-  .connect(MONGODB_URI)
-  .then(() => {
-    console.log('Conectado ao MongoDB');
-    app.listen(PORT, () => console.log(`Servidor rodando na porta ${PORT}`));
-  })
-  .catch((err) => {
-    console.error('Erro ao conectar ao MongoDB:', err.message);
-    process.exit(1);
-  });
+module.exports = app;

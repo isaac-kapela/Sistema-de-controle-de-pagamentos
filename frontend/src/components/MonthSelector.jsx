@@ -14,7 +14,7 @@ export default function MonthSelector({ month, year, onChange }) {
   for (let y = currentYear - 2; y <= currentYear + 1; y++) years.push(y);
 
   return (
-    <div style={styles.wrapper}>
+    <div className="month-selector" style={styles.wrapper}>
       <select value={month} onChange={handleMonth} style={styles.select}>
         {MONTHS.map((m, i) => (
           <option key={i + 1} value={i + 1}>{m}</option>
