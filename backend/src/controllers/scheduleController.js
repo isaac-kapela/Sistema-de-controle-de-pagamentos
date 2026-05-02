@@ -89,18 +89,18 @@ async function updateSchedule(req, res) {
 // DELETE /api/schedules/:id
 async function deleteSchedule(req, res) {
   try {
-    await Schedule.findByIdAndUpdate(req.params.id, { ativo: false });
+    await Schedule.findByIdAndDelete(req.params.id);
     res.json({ message: 'Horário removido.' });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao remover horário.' });
   }
 }
 
-// DELETE /api/schedules  (admin — desativa todos)
+// DELETE /api/schedules  (admin — exclui todos permanentemente)
 async function clearAllSchedules(req, res) {
   try {
-    const result = await Schedule.updateMany({ ativo: true }, { ativo: false });
-    res.json({ message: 'Todos os horários foram removidos.', count: result.modifiedCount });
+    const result = await Schedule.deleteMany({});
+    res.json({ message: 'Todos os horários foram removidos.', count: result.deletedCount });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao limpar horários.' });
   }

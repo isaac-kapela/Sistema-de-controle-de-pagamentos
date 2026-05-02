@@ -78,14 +78,18 @@ export default function SchedulesPage() {
   // Áreas com ao menos 1 membro cadastrado
   const presentAreas = AREAS.filter(a => schedules.some(sc => sc.area === a));
 
-  // Liderança: capitão OU líder OU área Gestão e Design
-  const lideres = schedules.filter(sc => sc.capitao || sc.lider || sc.area === 'Gestao e Design');
+  // Gestão e Capitania: área Gestão e Design + capitães
+  const gestaoCapitania = schedules.filter(sc => sc.capitao || sc.area === 'Gestao e Design');
+
+  // Líderes e Capitania: líderes + capitães
+  const lideres = schedules.filter(sc => sc.capitao || sc.lider);
 
   // Aggregate geral
   const aggGeral = buildAggregate(schedules);
 
-  // Aggregate liderança
-  const aggLideranca = buildAggregate(lideres);
+  // Aggregates
+  const aggGestaoCapitania = buildAggregate(gestaoCapitania);
+  const aggLideranca       = buildAggregate(lideres);
 
   // Aggregate por área
   function aggForArea(area) {
@@ -224,13 +228,29 @@ export default function SchedulesPage() {
           </TabBtn>
         )}
 
-        {/* Liderança */}
+        {/* Gestão e Capitania */}
+        {gestaoCapitania.length > 0 && (
+          <>
+            <span style={s.sep} />
+            <TabBtn id="gestao-capitania" active={tab} onClick={setTab}>
+              ★ Gestão e Capitania
+            </TabBtn>
+          </>
+        )}
+
+        {/* Líderes e Capitania */}
         {lideres.length > 0 && (
           <>
             <span style={s.sep} />
             <TabBtn id="lideranca" active={tab} onClick={setTab}>
-              ★ Gestão e Liderança
+              ◆ Líderes e Capitania
             </TabBtn>
+            {lideres.map(sc => (
+              <TabBtn key={sc._id} id={`member:${sc.nome}`} active={tab} onClick={setTab}>
+                {sc.capitao ? '★ ' : '◆ '}
+                {firstName(sc.nome)}
+              </TabBtn>
+            ))}
           </>
         )}
 
@@ -272,21 +292,62 @@ export default function SchedulesPage() {
         />
       )}
 
-      {/* ══ Liderança ════════════════════════════════════════════ */}
+      {/* ══ Gestão e Capitania ═══════════════════════════════════ */}
+      {tab === 'gestao-capitania' && (
+        <div style={s.section}>
+          <div style={s.sectionHeader}>
+            <h3 style={s.sectionTitle}>★ Gestão e Capitania</h3>
+            <span style={s.badge2}>{gestaoCapitania.length} pessoa{gestaoCapitania.length !== 1 ? 's' : ''}</span>
+          </div>
+          <div style={s.memberChips}>
+            {gestaoCapitania.map(sc => (
+              <span key={sc._id} style={{ ...s.chip, cursor: 'pointer' }} onClick={() => setTab(`member:${sc.nome}`)}>
+                {sc.capitao ? '★ ' : ''}{sc.nome}
+                {sc.area && <span style={s.chipArea}> · {sc.area}</span>}
+              </span>
+            ))}
+          </div>
+          <div style={s.compareLegend}>
+            <span style={{ ...s.legendDot, background: '#166534' }} />
+            <span style={s.legendText}>Verde = todos livres — podem se reunir</span>
+            <span style={{ ...s.legendDot, background: '#450a0a', marginLeft: 16 }} />
+            <span style={s.legendText}>Vermelho = todos ocupados</span>
+          </div>
+          <div style={s.gridCard}>
+            <ScheduleGrid mode="aggregate" aggregate={aggGestaoCapitania.aggregate} total={aggGestaoCapitania.total} />
+          </div>
+        </div>
+      )}
+
+      {/* ══ Líderes e Capitania ══════════════════════════════════ */}
       {tab === 'lideranca' && (
         <div style={s.section}>
           <div style={s.sectionHeader}>
-            <h3 style={s.sectionTitle}>★ Gestão e Liderança</h3>
+            <h3 style={s.sectionTitle}>◆ Líderes e Capitania</h3>
             <span style={s.badge2}>{lideres.length} pessoa{lideres.length !== 1 ? 's' : ''}</span>
           </div>
+
           <div style={s.memberChips}>
             {lideres.map(sc => (
-              <span key={sc._id} style={s.chip}>
+              <span
+                key={sc._id}
+                style={{ ...s.chip, cursor: 'pointer' }}
+                onClick={() => setTab(`member:${sc.nome}`)}
+                title="Ver horário individual"
+              >
                 {sc.capitao ? '★ ' : '◆ '}{sc.nome}
                 {sc.area && <span style={s.chipArea}> · {sc.area}</span>}
               </span>
             ))}
           </div>
+
+          <div style={s.compareLegend}>
+            <span style={{ ...s.legendDot, background: '#166534' }} />
+            <span style={s.legendText}>Verde = todos livres — podem se reunir</span>
+            <span style={{ ...s.legendDot, background: '#450a0a', marginLeft: 16 }} />
+            <span style={s.legendText}>Vermelho = todos ocupados</span>
+          </div>
+
           {aggLideranca.total > 0 && (
             <div style={s.gridCard}>
               <ScheduleGrid mode="aggregate" aggregate={aggLideranca.aggregate} total={aggLideranca.total} />
