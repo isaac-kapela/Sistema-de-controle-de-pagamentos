@@ -4,6 +4,7 @@ import { useAuth } from './context/AuthContext';
 import LoginModal from './components/LoginModal';
 import PaymentsPage from './pages/PaymentsPage';
 import MembersPage from './pages/MembersPage';
+import SchedulesPage from './pages/SchedulesPage';
 
 export default function App() {
   const { isAdmin, logout } = useAuth();
@@ -34,6 +35,9 @@ export default function App() {
         <NavLink to="/membros" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
           Membros
         </NavLink>
+        <NavLink to="/horarios" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
+          Horários
+        </NavLink>
       </nav>
 
       {/* Conteudo */}
@@ -41,6 +45,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<PaymentsPage />} />
           <Route path="/membros" element={<MembersPage />} />
+          <Route path="/horarios" element={<SchedulesPage />} />
         </Routes>
       </main>
 

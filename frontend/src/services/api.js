@@ -36,6 +36,28 @@ export const updateMember = (id, data) => api.put(`/members/${id}`, data).then((
 
 export const deleteMember = (id) => api.delete(`/members/${id}`).then((r) => r.data);
 
+// ─── Horários ────────────────────────────────────────────────
+export const parsePDF = (file) => {
+  const fd = new FormData();
+  fd.append('pdf', file);
+  return api.post('/schedules/parse-pdf', fd, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    timeout: 30000,
+  }).then((r) => r.data);
+};
+
+export const getSchedules = (semestre = '') =>
+  api.get('/schedules', { params: semestre ? { semestre } : {} }).then((r) => r.data);
+
+export const getAggregate = (semestre = '') =>
+  api.get('/schedules/aggregate', { params: semestre ? { semestre } : {} }).then((r) => r.data);
+
+export const createSchedule = (data) => api.post('/schedules', data).then((r) => r.data);
+
+export const deleteSchedule = (id) => api.delete(`/schedules/${id}`).then((r) => r.data);
+
+export const clearAllSchedules = () => api.delete('/schedules').then((r) => r.data);
+
 // ─── Email ───────────────────────────────────────────────────
 export const sendCharge = (paymentId) =>
   api.post(`/email/charge/${paymentId}`).then((r) => r.data);

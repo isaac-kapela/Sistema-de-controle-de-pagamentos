@@ -34,7 +34,8 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/email', require('./routes/email'));
-app.use('/api/members', require('./routes/members'));
+app.use('/api/members',   require('./routes/members'));
+app.use('/api/schedules', require('./routes/schedules'));
 
 // Health check
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
