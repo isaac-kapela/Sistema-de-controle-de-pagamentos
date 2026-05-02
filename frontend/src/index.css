@@ -92,6 +92,31 @@ input, select {
   display: none;
 }
 
+/* ── Responsividade dos modais e landing ── */
+.member-form-overlay,
+.member-detail-overlay {
+  padding: 12px;
+  align-items: flex-start;
+}
+
+.member-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px 20px;
+}
+
+.member-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 8px 20px;
+}
+
+.members-toolbar-right {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 /* ── Mobile ─────────────────────────── */
 @media (max-width: 640px) {
   .app-header {

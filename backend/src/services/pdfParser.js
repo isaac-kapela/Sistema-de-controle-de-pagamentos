@@ -1,4 +1,4 @@
-const { PDFParse } = require('pdf-parse');
+const pdfParse = require('pdf-parse');
 
 // Mapeamento de abreviações de dia (usadas no comprovante UFJF) para índice 0-6
 const DAY_MAP = {
@@ -28,9 +28,7 @@ function normDay(str) {
  * Cada ocorrência gera 2 slots consecutivos (padrão UFJF: aulas de 2h).
  */
 async function parseScheduleFromPDF(buffer) {
-  const parser = new PDFParse({ data: buffer });
-  const data = await parser.getText();
-  await parser.destroy();
+  const data = await pdfParse(buffer);
   const text = data.text;
 
   // Nome do aluno
