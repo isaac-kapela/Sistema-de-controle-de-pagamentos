@@ -18,7 +18,7 @@ const fmt = (v) =>
 
 function buildHtml({ name, month, year, isDriver, gasolinaPaid, drivePaid, amount, amountPaid }) {
   const monthName = MONTHS[month - 1];
-  const pending = amount - amountPaid;
+  const pendingMonth = amount - amountPaid;
 
   const gasRow = !isDriver ? `
     <tr>
@@ -28,6 +28,7 @@ function buildHtml({ name, month, year, isDriver, gasolinaPaid, drivePaid, amoun
         ${gasolinaPaid ? 'Pago' : 'Pendente'}
       </td>
     </tr>` : '';
+
 
   return `
 <!DOCTYPE html>
@@ -68,8 +69,10 @@ function buildHtml({ name, month, year, isDriver, gasolinaPaid, drivePaid, amoun
       </table>
 
       <div style="background:#1f1f1f;border-radius:8px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:14px;color:#9ca3af;">Total pendente</span>
-        <span style="font-size:20px;font-weight:700;color:#a80303;">${fmt(pending)}</span>
+        <div>
+          <div style="font-size:14px;color:#9ca3af;">Pendente este mês</div>
+        </div>
+        <span style="font-size:20px;font-weight:700;color:#e5e7eb;">${fmt(pendingMonth)}</span>
       </div>
 
       <p style="margin:20px 0 0;font-size:13px;color:#9ca3af;text-align:center;">
@@ -87,14 +90,62 @@ function buildHtml({ name, month, year, isDriver, gasolinaPaid, drivePaid, amoun
 
 async function sendChargeEmail({ to, name, month, year, isDriver, gasolinaPaid, drivePaid, amount, amountPaid }) {
   const monthName = MONTHS[month - 1];
-  const pending = amount - amountPaid;
+  const pendingMonth = amount - amountPaid;
 
   await transporter.sendMail({
     from: `"GP Microraptor" <${process.env.MAIL_USER}>`,
     to,
-    subject: `[Cobrança GMM] Pagamento pendente — ${monthName}/${year} (${fmt(pending)})`,
+    subject: `[Cobrança GMM] Pagamento pendente — ${monthName}/${year} (${fmt(pendingMonth)})`,
     html: buildHtml({ name, month, year, isDriver, gasolinaPaid, drivePaid, amount, amountPaid }),
   });
 }
 
-module.exports = { sendChargeEmail };
+function buildBirthdayHtml({ name }) {
+  return `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Segoe UI',sans-serif;color:#f5f5f5;">
+  <div style="max-width:520px;margin:32px auto;background:#141414;border:1px solid #2e2e2e;border-radius:12px;overflow:hidden;">
+
+    <div style="background:#a80303;padding:32px 28px;text-align:center;">
+      <h1 style="margin:0 0 6px;font-size:26px;font-weight:800;color:#fff;letter-spacing:-0.02em;">
+        Feliz Aniversario!
+      </h1>
+      <p style="margin:0;font-size:14px;color:rgba(255,255,255,0.85);">GP Microraptor</p>
+    </div>
+
+    <div style="padding:32px 28px;text-align:center;">
+      <p style="margin:0 0 16px;font-size:18px;font-weight:600;">
+        ${name},
+      </p>
+      <p style="margin:0 0 24px;font-size:15px;color:#d1d5db;line-height:1.7;">
+        A equipe <strong style="color:#f5f5f5;">Microraptor</strong> deseja a voce um
+        feliz aniversario! Obrigado por fazer parte da nossa historia e por tudo
+        que voce ja contribuiu para o nosso grupo. Que esse novo ano de vida seja
+        repleto de conquistas, saude e muito voo alto.
+      </p>
+      <div style="display:inline-block;background:#1f1f1f;border:1px solid #2e2e2e;border-radius:10px;padding:16px 32px;margin-bottom:24px;">
+        <p style="margin:0;font-size:13px;color:#9ca3af;">Com carinho,</p>
+        <p style="margin:4px 0 0;font-size:16px;font-weight:700;color:#f5f5f5;">Equipe Microraptor</p>
+      </div>
+    </div>
+
+    <div style="padding:14px 28px;border-top:1px solid #2e2e2e;text-align:center;">
+      <p style="margin:0;font-size:12px;color:#9ca3af;">GP Microraptor — Sistema de Gestao de Membros</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+async function sendBirthdayEmail({ to, name }) {
+  await transporter.sendMail({
+    from: `"GP Microraptor" <${process.env.MAIL_USER}>`,
+    to,
+    subject: `Feliz Aniversario, ${name}! A equipe Microraptor deseja tudo de bom`,
+    html: buildBirthdayHtml({ name }),
+  });
+}
+
+module.exports = { sendChargeEmail, sendBirthdayEmail };

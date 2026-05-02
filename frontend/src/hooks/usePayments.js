@@ -28,19 +28,20 @@ export function usePayments(month, year) {
   const togglePayment = async (id, field) => {
     try {
       const updated = await apiToggle(id, field);
-      setData((prev) => ({
-        ...prev,
-        payments: prev.payments.map((p) => (p._id === id ? updated : p)),
-      }));
-      // Recalcula summary localmente
       setData((prev) => {
-        const payments = prev.payments;
-        const totalAmount = payments.reduce((s, p) => s + p.amount, 0);
-        const totalPaid = payments.reduce((s, p) => s + p.amountPaid, 0);
+        const newPayments = prev.payments.map((p) => p._id === id ? updated : p);
+
+        const totalAmount = newPayments.reduce((s, p) => s + p.amount, 0);
+        const totalPaid = newPayments.reduce((s, p) => s + p.amountPaid, 0);
         const totalPending = totalAmount - totalPaid;
-        const countPaid = payments.filter((p) => p.fullyPaid).length;
-        const countPending = payments.filter((p) => !p.fullyPaid).length;
-        return { ...prev, summary: { totalAmount, totalPaid, totalPending, countPaid, countPending } };
+        const countPaid = newPayments.filter((p) => p.fullyPaid).length;
+        const countPending = newPayments.filter((p) => !p.fullyPaid).length;
+
+        return {
+          ...prev,
+          payments: newPayments,
+          summary: { totalAmount, totalPaid, totalPending, countPaid, countPending },
+        };
       });
     } catch {
       toast.error('Erro ao atualizar pagamento.');

@@ -1,236 +1,87 @@
 import React, { useState } from 'react';
-import { usePayments } from './hooks/usePayments';
+import { Routes, Route, NavLink } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
-import MonthSelector from './components/MonthSelector';
-import SummaryCards from './components/SummaryCards';
-import PaymentTable from './components/PaymentTable';
-import AddUserModal from './components/AddUserModal';
 import LoginModal from './components/LoginModal';
-import { exportYearToExcel } from './services/exportExcel';
-import { sendChargeAll } from './services/api';
-import toast from 'react-hot-toast';
-
-const MONTHS = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
-];
+import PaymentsPage from './pages/PaymentsPage';
+import MembersPage from './pages/MembersPage';
 
 export default function App() {
-  const now = new Date();
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [year, setYear] = useState(now.getFullYear());
-  const [showModal, setShowModal] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState(0);
   const { isAdmin, logout } = useAuth();
-  const [charging, setCharging] = useState(false);
-
-  const handleChargeAll = async () => {
-    if (!window.confirm('Enviar cobrança por email para todos os pendentes do mês?')) return;
-    setCharging(true);
-    try {
-      const res = await sendChargeAll(month, year);
-      toast.success(res.message);
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Erro ao enviar emails.');
-    } finally {
-      setCharging(false);
-    }
-  };
-
-  const handleExportYear = async () => {
-    setExporting(true);
-    setExportProgress(0);
-    try {
-      await exportYearToExcel(year, (m) => setExportProgress(m));
-    } finally {
-      setExporting(false);
-      setExportProgress(0);
-    }
-  };
-
-  const { data, loading, error, reload, togglePayment } = usePayments(month, year);
-
-  const handleMonthChange = (m, y) => {
-    setMonth(m);
-    setYear(y);
-  };
+  const [showLogin, setShowLogin] = useState(false);
 
   return (
-    <div style={styles.page}>
+    <div style={s.page}>
       {/* Header */}
       <header className="app-header">
-        <div style={styles.brand}>
-          <img src="/logo.png" alt="Logo" style={styles.logo} />
-          <div>
-            <h1 className="app-title">Controle de Pagamentos</h1>
-            <p style={styles.subtitle}>
-              {MONTHS[month - 1]} de {year}
-            </p>
-          </div>
+        <div style={s.brand}>
+          <img src="/logo.png" alt="Logo" style={s.logo} />
+          <h1 className="app-title">Microraptor</h1>
         </div>
         <div className="header-actions">
-          <MonthSelector month={month} year={year} onChange={handleMonthChange} />
-          <button
-            onClick={handleExportYear}
-            disabled={exporting}
-            style={{ ...styles.exportBtn, opacity: exporting ? 0.6 : 1 }}
-          >
-            {exporting ? `Exportando ${exportProgress}/12...` : `Exportar ${year}`}
-          </button>
-          {isAdmin && (
-            <>
-              <button
-                onClick={handleChargeAll}
-                disabled={charging}
-                style={{ ...styles.exportBtn, opacity: charging ? 0.6 : 1 }}
-              >
-                {charging ? 'Enviando…' : 'Cobrar todos'}
-              </button>
-              <button onClick={() => setShowModal(true)} style={styles.addBtn}>
-                + Novo Membro
-              </button>
-            </>
-          )}
           {isAdmin ? (
-            <button onClick={logout} style={styles.logoutBtn}>
-              Sair (Admin)
-            </button>
+            <button onClick={logout} style={s.logoutBtn}>Sair (Admin)</button>
           ) : (
-            <button onClick={() => setShowLogin(true)} style={styles.adminBtn}>
-              Admin
-            </button>
+            <button onClick={() => setShowLogin(true)} style={s.adminBtn}>Admin</button>
           )}
         </div>
       </header>
 
-      {/* Conteúdo */}
+      {/* Navegacao por abas */}
+      <nav style={s.tabBar}>
+        <NavLink to="/" end style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
+          Pagamentos
+        </NavLink>
+        <NavLink to="/membros" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
+          Membros
+        </NavLink>
+      </nav>
+
+      {/* Conteudo */}
       <main className="app-main">
-        {loading && (
-          <div style={styles.center}>
-            <div style={styles.spinner} />
-            <span style={{ color: 'var(--text-muted)', marginTop: 12 }}>Carregando…</span>
-          </div>
-        )}
-
-        {error && !loading && (
-          <div style={styles.errorBox}>
-            {error}
-            <button onClick={reload} style={styles.retryBtn}>Tentar novamente</button>
-          </div>
-        )}
-
-        {!loading && !error && data && (
-          <>
-            <SummaryCards summary={data.summary} />
-            <PaymentTable payments={data.payments} onToggle={togglePayment} onDeleted={reload} isAdmin={isAdmin} />
-          </>
-        )}
+        <Routes>
+          <Route path="/" element={<PaymentsPage />} />
+          <Route path="/membros" element={<MembersPage />} />
+        </Routes>
       </main>
 
-      {showModal && (
-        <AddUserModal onClose={() => setShowModal(false)} onCreated={reload} />
-      )}
-      {showLogin && (
-        <LoginModal onClose={() => setShowLogin(false)} />
-      )}
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
     </div>
   );
 }
 
-const styles = {
-  page: {
-    minHeight: '100vh',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  brand: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 14,
-  },
-  logo: {
-    height: 48,
-    width: 48,
-    objectFit: 'contain',
-    borderRadius: 8,
-  },
-  subtitle: {
-    color: 'var(--text-muted)',
-    fontSize: 13,
-    marginTop: 2,
-  },
-  exportBtn: {
-    background: 'transparent',
-    color: 'var(--text-muted)',
-    border: '1px solid var(--border)',
-    padding: '9px 18px',
-    borderRadius: 'var(--radius)',
-    fontSize: 14,
-    fontWeight: 500,
-    transition: 'border-color 0.15s, color 0.15s',
-  },
-  addBtn: {
-    background: 'var(--primary)',
-    color: '#fff',
-    padding: '9px 18px',
-    borderRadius: 'var(--radius)',
-    fontSize: 14,
-    fontWeight: 600,
-    boxShadow: '0 2px 8px rgba(168,3,3,0.4)',
-    transition: 'opacity 0.15s',
-  },
+const s = {
+  page: { minHeight: '100vh', display: 'flex', flexDirection: 'column' },
+  brand: { display: 'flex', alignItems: 'center', gap: 14 },
+  logo: { height: 48, width: 48, objectFit: 'contain', borderRadius: 8 },
   adminBtn: {
-    background: 'transparent',
-    color: 'var(--text-muted)',
-    border: '1px solid var(--border)',
-    padding: '9px 18px',
-    borderRadius: 'var(--radius)',
-    fontSize: 14,
-    fontWeight: 500,
+    background: 'transparent', color: 'var(--text-muted)',
+    border: '1px solid var(--border)', padding: '9px 18px',
+    borderRadius: 'var(--radius)', fontSize: 14, fontWeight: 500, cursor: 'pointer',
   },
   logoutBtn: {
-    background: 'transparent',
-    color: 'var(--primary)',
-    border: '1px solid var(--primary)',
-    padding: '9px 18px',
-    borderRadius: 'var(--radius)',
+    background: 'transparent', color: 'var(--primary)',
+    border: '1px solid var(--primary)', padding: '9px 18px',
+    borderRadius: 'var(--radius)', fontSize: 14, fontWeight: 500, cursor: 'pointer',
+  },
+  tabBar: {
+    background: 'var(--bg-card)',
+    borderBottom: '1px solid var(--border)',
+    display: 'flex',
+    paddingLeft: 32,
+  },
+  tab: {
+    color: 'var(--text-muted)',
+    textDecoration: 'none',
+    borderBottom: '2px solid transparent',
+    padding: '12px 20px',
     fontSize: 14,
     fontWeight: 500,
+    display: 'inline-block',
+    transition: 'color 0.15s, border-color 0.15s',
   },
-  center: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 300,
-  },
-  spinner: {
-    width: 36,
-    height: 36,
-    border: '3px solid var(--border)',
-    borderTop: '3px solid #a80303',
-    borderRadius: '50%',
-    animation: 'spin 0.8s linear infinite',
-  },
-  errorBox: {
-    background: '#3a1f1f',
-    border: '1px solid var(--danger)',
-    borderRadius: 'var(--radius)',
-    padding: '20px 24px',
-    color: 'var(--danger)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 16,
-  },
-  retryBtn: {
-    background: 'var(--danger)',
-    color: '#fff',
-    padding: '7px 14px',
-    borderRadius: 8,
-    fontSize: 13,
-    fontWeight: 600,
+  tabActive: {
+    color: 'var(--text)',
+    borderBottom: '2px solid var(--primary)',
+    fontWeight: 700,
   },
 };
-

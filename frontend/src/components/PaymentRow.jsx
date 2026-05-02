@@ -185,9 +185,11 @@ export function PaymentCard({ payment, onToggle, onDeleted, isAdmin }) {
           <span style={{ ...styles.badge, background: isDriver ? '#1a0000' : '#1f1f1f', border: `1px solid ${isDriver ? '#a80303' : '#3a3a3a'}`, color: isDriver ? '#a80303' : 'var(--text-muted)' }}>
             {isDriver ? 'Motorista' : 'Normal'}
           </span>
-          <span style={{ color: statusColor, fontWeight: 700, fontSize: 13 }}>
-            {fullyPaid ? 'Pago' : `Falta ${fmt(amount - amountPaid)}`}
-          </span>
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ color: statusColor, fontWeight: 700, fontSize: 13 }}>
+              {fullyPaid ? 'Pago' : `Falta ${fmt(amount - amountPaid)}`}
+            </span>
+          </div>
         </div>
       </div>
 

@@ -28,10 +28,12 @@ const listPayments = async (req, res) => {
     const countPaid = active.filter((p) => p.fullyPaid).length;
     const countPending = active.filter((p) => !p.fullyPaid).length;
 
+    const paymentsData = active.map((p) => p.toJSON());
+
     res.json({
       month,
       year,
-      payments: active,
+      payments: paymentsData,
       summary: { totalAmount, totalPaid, totalPending, countPaid, countPending },
     });
   } catch (err) {

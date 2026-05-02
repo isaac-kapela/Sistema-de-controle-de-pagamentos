@@ -3,6 +3,7 @@ const router = express.Router();
 const Payment = require('../models/Payment');
 const { requireAuth } = require('../middleware/auth');
 const { sendChargeEmail } = require('../services/mailer');
+const { sendTodayBirthdays } = require('../services/birthday');
 
 // Envia cobrança para um único usuário
 router.post('/charge/:paymentId', requireAuth, async (req, res) => {
@@ -57,6 +58,23 @@ router.post('/charge-all', requireAuth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao enviar emails.' });
+  }
+});
+
+// Dispara emails de aniversario do dia manualmente (admin)
+router.post('/birthday-today', requireAuth, async (req, res) => {
+  try {
+    const { sent, failed, names } = await sendTodayBirthdays();
+    if (names.length === 0) return res.json({ message: 'Nenhum aniversariante hoje.' });
+    res.json({
+      message: `${sent} email(s) enviado(s)${failed > 0 ? `, ${failed} falhou` : ''}.`,
+      names,
+      sent,
+      failed,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao enviar emails de aniversario.' });
   }
 });
 

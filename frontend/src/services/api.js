@@ -24,11 +24,26 @@ export const togglePayment = (id, field) =>
 export const generatePayments = (month, year) =>
   api.post('/payments/generate', { month, year }).then((r) => r.data);
 
+// ─── Membros ─────────────────────────────────────────────────
+export const getMembers = (search = '') =>
+  api.get('/members', { params: search ? { search } : {} }).then((r) => r.data);
+
+export const getMember = (id) => api.get(`/members/${id}`).then((r) => r.data);
+
+export const createMember = (data) => api.post('/members', data).then((r) => r.data);
+
+export const updateMember = (id, data) => api.put(`/members/${id}`, data).then((r) => r.data);
+
+export const deleteMember = (id) => api.delete(`/members/${id}`).then((r) => r.data);
+
 // ─── Email ───────────────────────────────────────────────────
 export const sendCharge = (paymentId) =>
   api.post(`/email/charge/${paymentId}`).then((r) => r.data);
 
 export const sendChargeAll = (month, year) =>
   api.post('/email/charge-all', { month, year }).then((r) => r.data);
+
+export const sendBirthdayToday = () =>
+  api.post('/email/birthday-today').then((r) => r.data);
 
 export default api;

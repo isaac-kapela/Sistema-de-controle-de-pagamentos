@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const { startBirthdayCron } = require('./services/birthday');
 
 const app = express();
 
@@ -33,9 +34,13 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/email', require('./routes/email'));
+app.use('/api/members', require('./routes/members'));
 
 // Health check
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
+
+// Inicia cron de aniversarios
+startBirthdayCron();
 
 // Inicia servidor apenas em desenvolvimento local
 if (require.main === module) {
