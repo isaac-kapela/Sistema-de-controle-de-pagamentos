@@ -50,6 +50,17 @@ export default function SchedulesPage() {
   const [saving, setSaving]           = useState(false);
   const fileRef = useRef();
 
+  // ── Comparar ─────────────────────────────────────────────────
+  const [compareSelected, setCompareSelected] = useState(new Set());
+
+  function toggleCompare(nome) {
+    setCompareSelected(prev => {
+      const next = new Set(prev);
+      next.has(nome) ? next.delete(nome) : next.add(nome);
+      return next;
+    });
+  }
+
   useEffect(() => { loadAll(); }, []);
 
   async function loadAll() {
@@ -89,6 +100,10 @@ export default function SchedulesPage() {
   // Área da aba de área
   const currentArea = tab.startsWith('area:') ? tab.slice(5) : null;
   const aggArea = currentArea ? aggForArea(currentArea) : null;
+
+  // Comparação: aggregate dos selecionados
+  const compareList = schedules.filter(sc => compareSelected.has(sc.nome));
+  const aggCompare  = buildAggregate(compareList);
 
   // ── Upload PDF ────────────────────────────────────────────────
   async function handleFile(file) {
@@ -200,8 +215,14 @@ export default function SchedulesPage() {
 
       {/* ── Barra de abas ── */}
       <div style={s.tabBar}>
-        <TabBtn id="geral" active={tab} onClick={setTab}>Visão Geral</TabBtn>
-        <TabBtn id="meu"   active={tab} onClick={setTab}>+ Meu Horário</TabBtn>
+        <TabBtn id="geral"    active={tab} onClick={setTab}>Visão Geral</TabBtn>
+        <TabBtn id="meu"      active={tab} onClick={setTab}>+ Meu Horário</TabBtn>
+        {schedules.length > 1 && (
+          <TabBtn id="comparar" active={tab} onClick={setTab}>
+            Comparar
+            {compareSelected.size > 0 && <span style={s.compareBadge}>{compareSelected.size}</span>}
+          </TabBtn>
+        )}
 
         {/* Liderança */}
         {lideres.length > 0 && (
@@ -270,6 +291,78 @@ export default function SchedulesPage() {
             <div style={s.gridCard}>
               <ScheduleGrid mode="aggregate" aggregate={aggLideranca.aggregate} total={aggLideranca.total} />
             </div>
+          )}
+        </div>
+      )}
+
+      {/* ══ Comparar ═════════════════════════════════════════════ */}
+      {tab === 'comparar' && (
+        <div style={s.section}>
+          <p style={s.compareHint}>
+            Selecione duas ou mais pessoas para ver quando todas estão livres ao mesmo tempo.
+          </p>
+
+          {/* Chips de seleção */}
+          <div style={s.compareChips}>
+            {schedules.map(sc => {
+              const sel = compareSelected.has(sc.nome);
+              return (
+                <button
+                  key={sc._id}
+                  onClick={() => toggleCompare(sc.nome)}
+                  style={{
+                    ...s.compareChip,
+                    background: sel ? 'var(--primary)' : 'var(--bg-card2)',
+                    color:      sel ? '#fff'            : 'var(--text-muted)',
+                    border:     sel ? '1px solid var(--primary)' : '1px solid var(--border)',
+                    fontWeight: sel ? 600 : 400,
+                  }}
+                >
+                  {sc.capitao && '★ '}{sc.lider && !sc.capitao && '◆ '}
+                  {firstName(sc.nome)}
+                  {sc.area && <span style={{ opacity: 0.7, fontSize: 11, marginLeft: 4 }}>· {sc.area}</span>}
+                </button>
+              );
+            })}
+          </div>
+
+          {compareSelected.size === 0 && (
+            <div style={s.empty}>
+              <span style={s.emptyIcon}>👥</span>
+              <p>Selecione pelo menos duas pessoas acima.</p>
+            </div>
+          )}
+
+          {compareSelected.size === 1 && (
+            <div style={s.empty}>
+              <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Selecione mais uma pessoa para comparar.</p>
+            </div>
+          )}
+
+          {compareSelected.size >= 2 && (
+            <>
+              <div style={{ ...s.sectionHeader, marginTop: 24 }}>
+                <h3 style={s.sectionTitle}>
+                  {[...compareSelected].map(n => firstName(n)).join(' + ')}
+                </h3>
+                <span style={s.badge2}>{compareSelected.size} pessoas</span>
+              </div>
+
+              <div style={s.compareLegend}>
+                <span style={{ ...s.legendDot, background: '#166534' }} />
+                <span style={s.legendText}>Verde = todos livres — podem se reunir</span>
+                <span style={{ ...s.legendDot, background: '#450a0a', marginLeft: 16 }} />
+                <span style={s.legendText}>Vermelho = todos ocupados</span>
+              </div>
+
+              <div style={s.gridCard}>
+                <ScheduleGrid
+                  mode="aggregate"
+                  aggregate={aggCompare.aggregate}
+                  total={aggCompare.total}
+                />
+              </div>
+            </>
           )}
         </div>
       )}
@@ -583,6 +676,22 @@ const s = {
     borderRadius: 'var(--radius)', color: '#ef4444',
     fontSize: 12, padding: '5px 12px', cursor: 'pointer',
   },
+
+  // Comparar
+  compareHint:  { fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 },
+  compareChips: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  compareChip:  {
+    borderRadius: 20, padding: '6px 14px', fontSize: 13,
+    cursor: 'pointer', transition: 'all 0.15s',
+  },
+  compareBadge: {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    marginLeft: 6, background: 'var(--primary)', color: '#fff',
+    borderRadius: '50%', width: 18, height: 18, fontSize: 11, fontWeight: 700,
+  },
+  compareLegend: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14, flexWrap: 'wrap' },
+  legendDot:  { width: 14, height: 14, borderRadius: 3, flexShrink: 0 },
+  legendText: { fontSize: 12, color: 'var(--text-muted)' },
 
   // Tags
   tagSem:  { fontSize: 11, color: 'var(--primary)', background: 'rgba(99,102,241,.12)', borderRadius: 12, padding: '2px 8px' },
