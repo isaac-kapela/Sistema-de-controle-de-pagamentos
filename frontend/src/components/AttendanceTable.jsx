@@ -7,6 +7,7 @@ const STATUS_OPTIONS = [
   { value: 'absent', label: 'Falta', color: '#ef4444', short: 'F' },
   { value: 'late', label: 'Atraso', color: '#f59e0b', short: 'A' },
   { value: 'justified', label: 'Justificado', color: '#3b82f6', short: 'J' },
+  { value: 'online', label: 'Online', color: '#a855f7', short: 'O' },
 ];
 
 export default function AttendanceTable({ meeting, isAdmin }) {

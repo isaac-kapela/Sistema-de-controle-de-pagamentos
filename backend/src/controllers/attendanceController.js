@@ -56,13 +56,13 @@ const getStats = async (req, res) => {
     const attByUser = {};
     for (const att of attendances) {
       const key = att.userId.toString();
-      if (!attByUser[key]) attByUser[key] = { present: 0, absent: 0, late: 0, justified: 0 };
+      if (!attByUser[key]) attByUser[key] = { present: 0, absent: 0, late: 0, justified: 0, online: 0 };
       attByUser[key][att.status]++;
     }
 
     const perUser = users.map(u => {
-      const stats = attByUser[u._id.toString()] || { present: 0, absent: 0, late: 0, justified: 0 };
-      const attended = stats.present + stats.late;
+      const stats = attByUser[u._id.toString()] || { present: 0, absent: 0, late: 0, justified: 0, online: 0 };
+      const attended = stats.present + stats.late + stats.online;
       const total = totalMeetings;
       const rate = total > 0 ? Math.round((attended / total) * 100) : 0;
       return {
@@ -73,13 +73,14 @@ const getStats = async (req, res) => {
         absent: stats.absent,
         late: stats.late,
         justified: stats.justified,
+        online: stats.online,
         total,
         rate,
       };
     });
 
     // Overall
-    const overall = { present: 0, absent: 0, late: 0, justified: 0 };
+    const overall = { present: 0, absent: 0, late: 0, justified: 0, online: 0 };
     for (const att of attendances) overall[att.status]++;
 
     // Evolução semanal — agrupado por semana ISO

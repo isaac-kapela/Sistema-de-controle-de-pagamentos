@@ -5,7 +5,7 @@ const attendanceSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   status: {
     type: String,
-    enum: ['present', 'absent', 'late', 'justified'],
+    enum: ['present', 'absent', 'late', 'justified', 'online'],
     required: true,
   },
   observations: { type: String, trim: true, default: '' },

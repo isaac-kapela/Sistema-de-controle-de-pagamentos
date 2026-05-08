@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import { getSemesters, getMeetings, getAttendances, getUsers } from '../services/api';
 
-const STATUS_LABELS = { present: 'Presente', absent: 'Falta', late: 'Atraso', justified: 'Justificado' };
-const STATUS_COLORS = { present: '#22c55e', absent: '#ef4444', late: '#f59e0b', justified: '#3b82f6' };
+const STATUS_LABELS = { present: 'Presente', absent: 'Falta', late: 'Atraso', justified: 'Justificado', online: 'Online' };
+const STATUS_COLORS = { present: '#22c55e', absent: '#ef4444', late: '#f59e0b', justified: '#3b82f6', online: '#a855f7' };
 const MEETING_STATUS_LABELS = { scheduled: 'Realizada', cancelled: 'Cancelada', extra: 'Extra' };
 
 export default function AttendanceHistory() {

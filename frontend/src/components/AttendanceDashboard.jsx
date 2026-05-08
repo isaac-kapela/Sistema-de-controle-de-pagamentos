@@ -12,9 +12,10 @@ const PRESENCE_COLORS = {
   absent: '#ef4444',
   late: '#f59e0b',
   justified: '#3b82f6',
+  online: '#a855f7',
 };
 
-const LABELS = { present: 'Presente', absent: 'Falta', late: 'Atraso', justified: 'Justificado' };
+const LABELS = { present: 'Presente', absent: 'Falta', late: 'Atraso', justified: 'Justificado', online: 'Online' };
 
 function rateColor(rate) {
   if (rate >= 85) return '#22c55e';
@@ -75,6 +76,7 @@ export default function AttendanceDashboard({ semesterId }) {
     { name: 'Falta', value: overall.absent, fill: PRESENCE_COLORS.absent },
     { name: 'Atraso', value: overall.late, fill: PRESENCE_COLORS.late },
     { name: 'Justificado', value: overall.justified, fill: PRESENCE_COLORS.justified },
+    { name: 'Online', value: overall.online || 0, fill: PRESENCE_COLORS.online },
   ].filter(d => d.value > 0);
 
   const barData = [...perUser].sort((a, b) => b.rate - a.rate).map(u => ({
@@ -192,6 +194,7 @@ export default function AttendanceDashboard({ semesterId }) {
                 <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--text-muted)' }}>
                   <span style={{ color: '#22c55e' }}>{u.present}P</span>
                   <span style={{ color: '#f59e0b' }}>{u.late}A</span>
+                  <span style={{ color: '#a855f7' }}>{u.online || 0}O</span>
                   <span style={{ color: '#ef4444' }}>{u.absent}F</span>
                   <span style={{ color: '#3b82f6' }}>{u.justified}J</span>
                 </div>
