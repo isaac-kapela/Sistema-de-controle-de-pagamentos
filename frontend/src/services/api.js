@@ -58,6 +58,43 @@ export const deleteSchedule = (id) => api.delete(`/schedules/${id}`).then((r) =>
 
 export const clearAllSchedules = () => api.delete('/schedules').then((r) => r.data);
 
+// ─── Semestres ───────────────────────────────────────────────
+export const getSemesters = () => api.get('/semesters').then((r) => r.data);
+
+export const createSemester = (data) => api.post('/semesters', data).then((r) => r.data);
+
+export const updateSemester = (id, data) => api.put(`/semesters/${id}`, data).then((r) => r.data);
+
+export const deleteSemester = (id) => api.delete(`/semesters/${id}`).then((r) => r.data);
+
+export const generateMeetingsForSemester = (id) =>
+  api.post(`/semesters/${id}/generate-meetings`).then((r) => r.data);
+
+export const startNewSemester = (data) => api.post('/semesters/new-semester', data).then((r) => r.data);
+
+// ─── Reuniões ─────────────────────────────────────────────────
+export const getMeetings = (params = {}) => api.get('/meetings', { params }).then((r) => r.data);
+
+export const createMeeting = (data) => api.post('/meetings', data).then((r) => r.data);
+
+export const updateMeeting = (id, data) => api.put(`/meetings/${id}`, data).then((r) => r.data);
+
+export const deleteMeeting = (id) => api.delete(`/meetings/${id}`).then((r) => r.data);
+
+// ─── Presenças ────────────────────────────────────────────────
+export const getAttendances = (params = {}) => api.get('/attendances', { params }).then((r) => r.data);
+
+export const getAttendanceStats = (semesterId) =>
+  api.get('/attendances/stats', { params: { semesterId } }).then((r) => r.data);
+
+export const upsertAttendance = (data) => api.post('/attendances', data).then((r) => r.data);
+
+export const bulkUpsertAttendances = (meetingId, records) =>
+  api.post('/attendances/bulk', { meetingId, records }).then((r) => r.data);
+
+export const clearSemesterAttendances = (semesterId) =>
+  api.delete(`/attendances/semester/${semesterId}`).then((r) => r.data);
+
 // ─── Email ───────────────────────────────────────────────────
 export const sendCharge = (paymentId) =>
   api.post(`/email/charge/${paymentId}`).then((r) => r.data);
