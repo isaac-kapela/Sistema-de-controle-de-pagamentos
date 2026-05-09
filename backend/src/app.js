@@ -39,6 +39,7 @@ app.use('/api/schedules',   require('./routes/schedules'));
 app.use('/api/semesters',   require('./routes/semesters'));
 app.use('/api/meetings',    require('./routes/meetings'));
 app.use('/api/attendances', require('./routes/attendances'));
+app.use('/api/cantina',    require('./routes/cantina'));
 
 // Health check
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }));

@@ -95,6 +95,28 @@ export const bulkUpsertAttendances = (meetingId, records) =>
 export const clearSemesterAttendances = (semesterId) =>
   api.delete(`/attendances/semester/${semesterId}`).then((r) => r.data);
 
+// ─── Cantina ─────────────────────────────────────────────────
+export const getCantinaProducts = (includeInactive = false) =>
+  api.get('/cantina/products', { params: includeInactive ? { includeInactive: 'true' } : {} }).then((r) => r.data);
+
+export const createCantinaProduct = (data) =>
+  api.post('/cantina/products', data).then((r) => r.data);
+
+export const updateCantinaProduct = (id, data) =>
+  api.put(`/cantina/products/${id}`, data).then((r) => r.data);
+
+export const deleteCantinaProduct = (id) =>
+  api.delete(`/cantina/products/${id}`).then((r) => r.data);
+
+export const getCantinaOrders = () =>
+  api.get('/cantina/orders').then((r) => r.data);
+
+export const createCantinaOrder = (data) =>
+  api.post('/cantina/orders', data).then((r) => r.data);
+
+export const deleteCantinaOrder = (id) =>
+  api.delete(`/cantina/orders/${id}`).then((r) => r.data);
+
 // ─── Email ───────────────────────────────────────────────────
 export const sendCharge = (paymentId) =>
   api.post(`/email/charge/${paymentId}`).then((r) => r.data);
