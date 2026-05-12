@@ -185,7 +185,7 @@ export default function MemberList({ isAdmin, reloadKey, onEdit }) {
   );
 }
 
-function MemberDetail({ member: m, isAdmin, onClose, onEdit, onDeactivate }) {
+export function MemberDetail({ member: m, isAdmin, onClose, onEdit, onDeactivate }) {
   return (
     <div style={s.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div style={s.detailModal}>

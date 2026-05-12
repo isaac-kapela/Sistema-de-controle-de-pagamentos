@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import MembersLanding from '../components/MembersLanding';
-import MemberList from '../components/MemberList';
+import MemberList, { MemberDetail } from '../components/MemberList';
 import MemberForm from '../components/MemberForm';
 import MemberTree from '../components/MemberTree';
 import { sendBirthdayToday } from '../services/api';
@@ -13,6 +13,7 @@ export default function MembersPage() {
   const [showForm, setShowForm] = useState(false);
   const [editMember, setEditMember] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [viewMember, setViewMember] = useState(null);
 
   const [sendingBirthday, setSendingBirthday] = useState(false);
 
@@ -89,7 +90,9 @@ export default function MembersPage() {
       )}
 
       {/* Arvore */}
-      {view === 'arvore' && <MemberTree />}
+      {view === 'arvore' && (
+        <MemberTree onMemberClick={(m) => setViewMember(m)} />
+      )}
 
       {/* Formulario */}
       {showForm && (
@@ -97,6 +100,16 @@ export default function MembersPage() {
           member={editMember}
           onClose={closeForm}
           onSaved={handleSaved}
+        />
+      )}
+
+      {viewMember && (
+        <MemberDetail
+          member={viewMember}
+          isAdmin={isAdmin}
+          onClose={() => setViewMember(null)}
+          onEdit={() => { openEdit(viewMember); setViewMember(null); }}
+          onDeactivate={() => setViewMember(null)}
         />
       )}
     </>
