@@ -127,6 +127,40 @@ export default function NewSale({ products, onSaved }) {
               Dinheiro
             </button>
           </div>
+
+          {paymentMethod === 'pix' && (
+            <div style={pixBox}>
+              <p style={{ margin: '0 0 12px', fontSize: 13, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Dados para pagamento via PIX
+              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Chave PIX (e-mail):</span>
+                <span style={{ fontWeight: 700, fontSize: 14, color: '#22c55e', letterSpacing: 0.3 }}>
+                  cantina@microraptor.com.br
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText('cantina@microraptor.com.br');
+                    toast.success('Chave PIX copiada!');
+                  }}
+                  style={copyBtn}
+                  title="Copiar chave PIX"
+                >
+                  Copiar
+                </button>
+              </div>
+              <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--text-muted)', textAlign: 'center' }}>
+                ou escaneie o QR Code:
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <img
+                  src="/pix-qrcode.jpeg"
+                  alt="QR Code PIX Cantina"
+                  style={{ width: 200, height: 200, borderRadius: 8, border: '2px solid #22c55e44' }}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <button
@@ -177,4 +211,14 @@ const btnConfirm = {
   width: '100%', padding: '14px 0', background: 'var(--primary)',
   color: '#fff', border: 'none', borderRadius: 8,
   fontWeight: 700, fontSize: 16,
+};
+const pixBox = {
+  marginTop: 14, padding: '16px 14px',
+  background: '#22c55e0d', border: '1px solid #22c55e33',
+  borderRadius: 10,
+};
+const copyBtn = {
+  padding: '4px 10px', borderRadius: 6, border: '1px solid #22c55e',
+  background: 'transparent', color: '#22c55e', cursor: 'pointer',
+  fontSize: 12, fontWeight: 600,
 };
