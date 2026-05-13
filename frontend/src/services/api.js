@@ -127,4 +127,32 @@ export const sendChargeAll = (month, year) =>
 export const sendBirthdayToday = () =>
   api.post('/email/birthday-today').then((r) => r.data);
 
+// ─── Estoque ──────────────────────────────────────────────────
+export const getStockItems = (params = {}) =>
+  api.get('/stock', { params }).then((r) => r.data);
+
+export const createStockItem = (data) =>
+  api.post('/stock', data).then((r) => r.data);
+
+export const updateStockItem = (id, data) =>
+  api.put(`/stock/${id}`, data).then((r) => r.data);
+
+export const deleteStockItem = (id) =>
+  api.delete(`/stock/${id}`).then((r) => r.data);
+
+export const adjustStockQty = (id, delta) =>
+  api.patch(`/stock/${id}/adjust`, { delta }).then((r) => r.data);
+
+export const sendStockAlert = (ids = []) =>
+  api.post('/stock/alert', { ids }).then((r) => r.data);
+
+export const getStockCategories = () =>
+  api.get('/stock/categories').then((r) => r.data);
+
+export const createStockCategory = (nome) =>
+  api.post('/stock/categories', { nome }).then((r) => r.data);
+
+export const deleteStockCategory = (id) =>
+  api.delete(`/stock/categories/${id}`).then((r) => r.data);
+
 export default api;

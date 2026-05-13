@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const { startBirthdayCron } = require('./services/birthday');
+const { seedCategories }   = require('./models/StockCategory');
 
 const app = express();
 
@@ -40,12 +41,16 @@ app.use('/api/semesters',   require('./routes/semesters'));
 app.use('/api/meetings',    require('./routes/meetings'));
 app.use('/api/attendances', require('./routes/attendances'));
 app.use('/api/cantina',    require('./routes/cantina'));
+app.use('/api/stock',      require('./routes/stock'));
 
 // Health check
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
 
 // Inicia cron de aniversarios
 startBirthdayCron();
+
+// Seed categorias de estoque (só na primeira vez)
+connectDB().then(seedCategories).catch(() => {});
 
 // Inicia servidor apenas em desenvolvimento local
 if (require.main === module) {

@@ -148,4 +148,71 @@ async function sendBirthdayEmail({ to, name }) {
   });
 }
 
-module.exports = { sendChargeEmail, sendBirthdayEmail };
+function buildStockAlertHtml(criticos) {
+  const esgotados = criticos.filter(i => i.status === 'esgotado');
+  const baixos    = criticos.filter(i => i.status === 'baixo');
+
+  const buildRows = (itens) => itens.map(i => `
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #2e2e2e;">${i.nome}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #2e2e2e;color:#9ca3af;">${i.categoria}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #2e2e2e;font-weight:700;color:${i.status === 'esgotado' ? '#ef4444' : '#eab308'};">
+        ${i.quantidade} ${i.unidade}
+      </td>
+      <td style="padding:8px 12px;border-bottom:1px solid #2e2e2e;color:#9ca3af;">${i.estoqueMinimo} ${i.unidade}</td>
+    </tr>`).join('');
+
+  const section = (titulo, itens, cor) => itens.length === 0 ? '' : `
+    <p style="margin:20px 0 8px;font-size:13px;font-weight:700;color:${cor};text-transform:uppercase;letter-spacing:0.05em;">${titulo} — ${itens.length} item(s)</p>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:8px;">
+      <thead>
+        <tr style="background:#1f1f1f;">
+          <th style="padding:8px 12px;text-align:left;color:#9ca3af;font-weight:600;">Material</th>
+          <th style="padding:8px 12px;text-align:left;color:#9ca3af;font-weight:600;">Categoria</th>
+          <th style="padding:8px 12px;text-align:left;color:#9ca3af;font-weight:600;">Qtd. atual</th>
+          <th style="padding:8px 12px;text-align:left;color:#9ca3af;font-weight:600;">Minimo</th>
+        </tr>
+      </thead>
+      <tbody>${buildRows(itens)}</tbody>
+    </table>`;
+
+  return `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Segoe UI',sans-serif;color:#f5f5f5;">
+  <div style="max-width:560px;margin:32px auto;background:#141414;border:1px solid #2e2e2e;border-radius:12px;overflow:hidden;">
+    <div style="background:#a80303;padding:24px 28px;">
+      <h1 style="margin:0;font-size:20px;font-weight:700;color:#fff;">Alerta de Estoque</h1>
+      <p style="margin:4px 0 0;font-size:13px;color:rgba(255,255,255,0.8);">
+        ${criticos.length} material(is) precisam de atenção
+      </p>
+    </div>
+    <div style="padding:24px 28px;">
+      ${section('Esgotados', esgotados, '#ef4444')}
+      ${section('Estoque Baixo', baixos, '#eab308')}
+      <p style="margin:24px 0 0;font-size:13px;color:#9ca3af;text-align:center;">
+        Acesse o sistema para repor o estoque.
+      </p>
+    </div>
+    <div style="padding:14px 28px;border-top:1px solid #2e2e2e;text-align:center;">
+      <p style="margin:0;font-size:12px;color:#9ca3af;">GP Microraptor — Controle de Estoque</p>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+async function sendStockAlertEmail(criticos) {
+  const recipients = (process.env.STOCK_ALERT_EMAILS || process.env.MAIL_USER || '').split(',').map(s => s.trim()).filter(Boolean);
+  if (recipients.length === 0) return;
+
+  await transporter.sendMail({
+    from: `"GP Microraptor" <${process.env.MAIL_USER}>`,
+    to: recipients.join(', '),
+    subject: `[Estoque] ${criticos.length} material(is) precisam de atenção`,
+    html: buildStockAlertHtml(criticos),
+  });
+}
+
+module.exports = { sendChargeEmail, sendBirthdayEmail, sendStockAlertEmail };
