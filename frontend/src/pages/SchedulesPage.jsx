@@ -671,8 +671,8 @@ function TabBtn({ id, active, onClick, children }) {
 
 /* ── Estilos ── */
 const s = {
-  page:     { padding: '28px 32px', maxWidth: 980, margin: '0 auto' },
-  header:   { marginBottom: 20, gap: 16 },
+  page:     { padding: 'clamp(14px, 3vw, 28px) clamp(14px, 4vw, 32px)', maxWidth: 980, margin: '0 auto' },
+  header:   { marginBottom: 20, gap: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap' },
   clearBtn: {
     background: 'transparent',
     border: '1px solid #ef4444',
@@ -721,13 +721,15 @@ const s = {
 
   gridCard: {
     background: 'var(--bg-card)', border: '1px solid var(--border)',
-    borderRadius: 'var(--radius)', padding: 20,
+    borderRadius: 'var(--radius)', padding: 'clamp(10px, 2vw, 20px)',
+    overflowX: 'auto',
   },
 
   adminTitle:    { fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 12 },
   scheduleList:  { display: 'flex', flexDirection: 'column', gap: 8 },
   scheduleItem:  {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    flexWrap: 'wrap', gap: 8,
     background: 'var(--bg-card)', border: '1px solid var(--border)',
     borderRadius: 'var(--radius)', padding: '10px 16px',
   },
@@ -764,7 +766,7 @@ const s = {
   // Upload
   uploadCard: {
     background: 'var(--bg-card)', border: '1px solid var(--border)',
-    borderRadius: 'var(--radius)', padding: 32,
+    borderRadius: 'var(--radius)', padding: 'clamp(16px, 4vw, 32px)',
     maxWidth: 560, margin: '0 auto',
   },
   uploadTitle: { fontSize: 17, fontWeight: 700, color: 'var(--text)', marginTop: 0, marginBottom: 8 },
@@ -789,9 +791,9 @@ const s = {
   // Preview
   previewCard: {
     background: 'var(--bg-card)', border: '1px solid var(--border)',
-    borderRadius: 'var(--radius)', padding: 28,
+    borderRadius: 'var(--radius)', padding: 'clamp(14px, 3vw, 28px)',
   },
-  previewHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  previewHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 20 },
   previewTitle:  { fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: 0 },
   resetBtn: {
     background: 'transparent', border: '1px solid var(--border)',
@@ -816,7 +818,7 @@ const s = {
   },
 
   editHint: { fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 },
-  saveRow:  { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 },
+  saveRow:  { display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 20 },
   slotCount: { fontSize: 13, color: 'var(--text-muted)' },
   saveBtn: {
     background: 'var(--primary)', color: '#fff', border: 'none',
@@ -825,7 +827,7 @@ const s = {
   },
 
   // Membro individual
-  memberHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
+  memberHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
   memberName:   { fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' },
   memberMeta:   { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' },
 };

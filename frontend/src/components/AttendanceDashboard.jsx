@@ -126,7 +126,7 @@ export default function AttendanceDashboard({ semesterId }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))', gap: 16 }}>
         {/* Gráfico de pizza */}
         {pieData.length > 0 && (
           <div style={chartCard}>

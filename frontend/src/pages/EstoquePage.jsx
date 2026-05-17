@@ -738,7 +738,7 @@ export default function EstoquePage() {
 // ─── Estilos ─────────────────────────────────────────────────────────────────
 
 const s = {
-  page: { paddingBottom: 40 },
+  page: { paddingBottom: 40, minWidth: 0 },
 
   header: {
     display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
@@ -766,7 +766,7 @@ const s = {
   searchInput: {
     background: 'var(--bg-card)', border: '1px solid var(--border)',
     color: 'var(--text)', borderRadius: 8, padding: '9px 14px', fontSize: 14,
-    minWidth: 200,
+    flex: 1, minWidth: 0, maxWidth: 320,
   },
   catTabs: { display: 'flex', gap: 6, flexWrap: 'wrap' },
   catTab: {
@@ -900,7 +900,7 @@ const s = {
   },
 
   // ── form
-  grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px 18px' },
+  grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px 18px' },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },
   label: { fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' },
   input: {

@@ -52,7 +52,7 @@ export default function CantinaPage() {
   };
 
   return (
-    <div style={{ padding: '24px 20px', maxWidth: 1000, margin: '0 auto' }}>
+    <div style={{ padding: 'clamp(14px, 3vw, 24px) clamp(14px, 4vw, 20px)', maxWidth: 1000, margin: '0 auto' }}>
       {/* Cabeçalho */}
       <div style={{ marginBottom: 24 }}>
         <h2 style={{ margin: 0, fontSize: 24, fontWeight: 800 }}>Cantina</h2>

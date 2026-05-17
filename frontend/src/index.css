@@ -101,13 +101,13 @@ input, select {
 
 .member-form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
   gap: 12px 20px;
 }
 
 .member-detail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(190px, 100%), 1fr));
   gap: 8px 20px;
 }
 
@@ -117,15 +117,26 @@ input, select {
   flex-wrap: wrap;
 }
 
+/* ── Tablet ──────────────────────────── */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 14px 20px;
+  }
+
+  .app-main {
+    padding: 16px 20px;
+  }
+}
+
 /* ── Mobile ─────────────────────────── */
 @media (max-width: 640px) {
   .app-header {
-    padding: 12px 16px;
+    padding: 12px 14px;
     gap: 10px;
   }
 
   .app-main {
-    padding: 12px 16px;
+    padding: 12px 14px;
   }
 
   .header-actions {
@@ -164,5 +175,58 @@ input, select {
 
   .payment-cards-mobile {
     display: block;
+  }
+
+  /* Páginas com padding próprio */
+  .page-padded {
+    padding: 14px !important;
+  }
+
+  /* Grid de formulários: 2 colunas → 1 coluna */
+  .form-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Input de busca ocupa largura total */
+  .search-input-responsive {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Linha de ações em modais vira coluna */
+  .modal-footer-responsive {
+    flex-direction: column-reverse !important;
+  }
+  .modal-footer-responsive > button {
+    width: 100%;
+  }
+
+  /* Linhas de item com justify-content ficam em coluna */
+  .schedule-item-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  /* Headers de seção com botão de ação */
+  .section-header-responsive {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  /* Preview/member header */
+  .flex-header-responsive {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  /* Save row em páginas de preview */
+  .save-row-responsive {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .save-row-responsive > button {
+    width: 100%;
   }
 }

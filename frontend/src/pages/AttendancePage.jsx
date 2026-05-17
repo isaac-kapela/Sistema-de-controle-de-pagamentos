@@ -64,7 +64,7 @@ export default function AttendancePage() {
   const activeSemester = semesters.find(s => s._id === selectedSemesterId);
 
   return (
-    <div style={{ padding: '24px 20px', maxWidth: 1100, margin: '0 auto' }}>
+    <div style={{ padding: 'clamp(14px, 3vw, 24px) clamp(14px, 4vw, 20px)', maxWidth: 1100, margin: '0 auto' }}>
       {/* Cabeçalho */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 14, marginBottom: 24 }}>
         <div>

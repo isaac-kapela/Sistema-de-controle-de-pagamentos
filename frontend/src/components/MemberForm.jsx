@@ -448,7 +448,7 @@ const s = {
   },
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(min(240px, 100%), 1fr))',
     gap: '12px 20px',
   },
   field: { display: 'flex', flexDirection: 'column', gap: 5 },

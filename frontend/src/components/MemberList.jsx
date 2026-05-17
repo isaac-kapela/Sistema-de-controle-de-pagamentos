@@ -315,7 +315,7 @@ const s = {
     alignItems: 'center', flexWrap: 'wrap',
   },
   search: {
-    flex: 1, minWidth: 200,
+    flex: 1, minWidth: 0,
     background: 'var(--bg-card)', border: '1px solid var(--border)',
     color: 'var(--text)', borderRadius: 8, padding: '9px 14px', fontSize: 14,
   },
@@ -391,7 +391,7 @@ const s = {
     textTransform: 'uppercase', letterSpacing: '0.06em',
     marginBottom: 10, paddingBottom: 5, borderBottom: '1px solid var(--border)',
   },
-  detailGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px 20px' },
+  detailGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 100%), 1fr))', gap: '8px 20px' },
   detailRow: { display: 'flex', flexDirection: 'column', gap: 2 },
   detailLabel: { fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' },
   detailValue: { fontSize: 14, color: 'var(--text)' },

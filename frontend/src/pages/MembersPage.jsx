@@ -122,7 +122,7 @@ const s = {
     justifyContent: 'space-between', gap: 12,
     marginBottom: 24, flexWrap: 'wrap',
   },
-  toolbarRight: { display: 'flex', gap: 10 },
+  toolbarRight: { display: 'flex', gap: 10, flexWrap: 'wrap' },
   btnBack: {
     background: 'transparent', color: 'var(--text-muted)',
     border: '1px solid var(--border)', padding: '9px 16px',
