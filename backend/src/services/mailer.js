@@ -75,7 +75,12 @@ function buildHtml({ name, month, year, isDriver, gasolinaPaid, drivePaid, amoun
         <span style="font-size:20px;font-weight:700;color:#e5e7eb;">${fmt(pendingMonth)}</span>
       </div>
 
-      <p style="margin:20px 0 0;font-size:13px;color:#9ca3af;text-align:center;">
+      <div style="margin:20px 0 0;background:#1a2e1a;border:1px solid #22c55e33;border-radius:8px;padding:14px 18px;text-align:center;">
+        <div style="font-size:12px;color:#9ca3af;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">Chave PIX para pagamento</div>
+        <div style="font-size:15px;font-weight:700;color:#22c55e;letter-spacing:0.02em;">microraptorufjf@gmail.com</div>
+      </div>
+
+      <p style="margin:16px 0 0;font-size:13px;color:#9ca3af;text-align:center;">
         Por favor, regularize o pagamento o quanto antes.<br>Em caso de dúvidas, fale com a gestão.
       </p>
     </div>

@@ -16,10 +16,10 @@ function initials(nome) {
 
 function miniCanopyR(count) {
   if (count <= 1)  return 30;
-  if (count <= 3)  return 50;
-  if (count <= 6)  return 68;
-  if (count <= 10) return 88;
-  if (count <= 15) return 108;
+  if (count <= 2)  return 50;
+  if (count <= 5)  return 68;
+  if (count <= 9)  return 88;
+  if (count <= 14) return 108;
   return 128;
 }
 
