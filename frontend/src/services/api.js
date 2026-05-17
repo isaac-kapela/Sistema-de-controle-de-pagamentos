@@ -10,7 +10,6 @@ export const getUsers = () => api.get('/users').then((r) => r.data);
 
 export const createUser = (data) => api.post('/users', data).then((r) => r.data);
 
-export const updateUser = (id, data) => api.put(`/users/${id}`, data).then((r) => r.data);
 
 export const deleteUser = (id) => api.delete(`/users/${id}`).then((r) => r.data);
 
@@ -21,8 +20,6 @@ export const getPayments = (month, year) =>
 export const togglePayment = (id, field) =>
   api.patch(`/payments/${id}/toggle`, { field }).then((r) => r.data);
 
-export const generatePayments = (month, year) =>
-  api.post('/payments/generate', { month, year }).then((r) => r.data);
 
 // ─── Membros ─────────────────────────────────────────────────
 export const getMembers = (search = '') =>
@@ -49,8 +46,6 @@ export const parsePDF = (file) => {
 export const getSchedules = (semestre = '') =>
   api.get('/schedules', { params: semestre ? { semestre } : {} }).then((r) => r.data);
 
-export const getAggregate = (semestre = '') =>
-  api.get('/schedules/aggregate', { params: semestre ? { semestre } : {} }).then((r) => r.data);
 
 export const createSchedule = (data) => api.post('/schedules', data).then((r) => r.data);
 
@@ -87,7 +82,6 @@ export const getAttendances = (params = {}) => api.get('/attendances', { params 
 export const getAttendanceStats = (semesterId) =>
   api.get('/attendances/stats', { params: { semesterId } }).then((r) => r.data);
 
-export const upsertAttendance = (data) => api.post('/attendances', data).then((r) => r.data);
 
 export const bulkUpsertAttendances = (meetingId, records) =>
   api.post('/attendances/bulk', { meetingId, records }).then((r) => r.data);
