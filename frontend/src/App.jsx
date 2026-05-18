@@ -34,7 +34,7 @@ export default function App() {
       {/* Navegacao por abas */}
       <nav style={s.tabBar}>
         <NavLink to="/" end style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
-          Pagamentos
+          Pagamentos GMM
         </NavLink>
         <NavLink to="/membros" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
           Membros
