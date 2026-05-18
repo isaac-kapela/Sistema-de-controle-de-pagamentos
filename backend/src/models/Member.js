@@ -56,6 +56,7 @@ const memberSchema = new mongoose.Schema(
     empresa: { type: String, trim: true, default: '' },
 
     ativo: { type: Boolean, default: true },
+    codigoAcesso: { type: String, default: null, sparse: true },
   },
   { timestamps: true, toJSON: { virtuals: true } }
 );

@@ -85,4 +85,56 @@ async function deleteMember(req, res) {
   }
 }
 
-module.exports = { listMembers, getMember, createMember, updateMember, deleteMember };
+function gerarCodigo() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+// POST /api/members/:id/generate-code
+async function generateAccessCode(req, res) {
+  try {
+    let codigo;
+    let tentativas = 0;
+    do {
+      codigo = gerarCodigo();
+      tentativas++;
+    } while (
+      tentativas < 10 &&
+      await Member.exists({ codigoAcesso: codigo })
+    );
+
+    const member = await Member.findByIdAndUpdate(
+      req.params.id,
+      { codigoAcesso: codigo },
+      { new: true }
+    );
+    if (!member) return res.status(404).json({ error: 'Membro não encontrado' });
+    res.json({ codigoAcesso: member.codigoAcesso, nome: member.nome });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao gerar código' });
+  }
+}
+
+// POST /api/members/validate-code  (público)
+async function validateAccessCode(req, res) {
+  try {
+    const { codigo } = req.body;
+    if (!codigo) return res.status(400).json({ error: 'Código obrigatório' });
+
+    const member = await Member.findOne({
+      codigoAcesso: codigo.trim().toUpperCase(),
+      ativo: true,
+      tipoMembro: 'membro',
+    });
+    if (!member) return res.status(404).json({ error: 'Código inválido' });
+
+    res.json({ _id: member._id, nome: member.nome, area: member.area });
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao validar código' });
+  }
+}
+
+module.exports = {
+  listMembers, getMember, createMember, updateMember, deleteMember,
+  generateAccessCode, validateAccessCode,
+};
