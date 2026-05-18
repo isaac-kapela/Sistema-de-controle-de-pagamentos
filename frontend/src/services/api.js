@@ -33,6 +33,12 @@ export const updateMember = (id, data) => api.put(`/members/${id}`, data).then((
 
 export const deleteMember = (id) => api.delete(`/members/${id}`).then((r) => r.data);
 
+export const generateMemberCode = (id) =>
+  api.post(`/members/${id}/generate-code`).then((r) => r.data);
+
+export const validateMemberCode = (codigo) =>
+  api.post('/members/validate-code', { codigo }).then((r) => r.data);
+
 // ─── Horários ────────────────────────────────────────────────
 export const parsePDF = (file) => {
   const fd = new FormData();
@@ -148,5 +154,45 @@ export const createStockCategory = (nome) =>
 
 export const deleteStockCategory = (id) =>
   api.delete(`/stock/categories/${id}`).then((r) => r.data);
+
+// ─── Feedbacks ────────────────────────────────────────────────
+export const getFeedbackCampaigns = (params = {}) =>
+  api.get('/feedbacks', { params }).then((r) => r.data);
+
+export const getFeedbackStats = () =>
+  api.get('/feedbacks/stats').then((r) => r.data);
+
+export const getFeedbackCampaign = (id) =>
+  api.get(`/feedbacks/${id}`).then((r) => r.data);
+
+export const createFeedbackCampaign = (data) =>
+  api.post('/feedbacks', data).then((r) => r.data);
+
+export const updateFeedbackCampaign = (id, data) =>
+  api.put(`/feedbacks/${id}`, data).then((r) => r.data);
+
+export const deleteFeedbackCampaign = (id) =>
+  api.delete(`/feedbacks/${id}`).then((r) => r.data);
+
+export const duplicateFeedbackCampaign = (id) =>
+  api.post(`/feedbacks/${id}/duplicate`).then((r) => r.data);
+
+export const archiveFeedbackCampaign = (id) =>
+  api.patch(`/feedbacks/${id}/archive`).then((r) => r.data);
+
+export const toggleFeedbackStatus = (id) =>
+  api.patch(`/feedbacks/${id}/toggle-status`).then((r) => r.data);
+
+export const getFeedbackCampaignStats = (id) =>
+  api.get(`/feedbacks/${id}/stats`).then((r) => r.data);
+
+export const getFeedbackResponses = (id, params = {}) =>
+  api.get(`/feedbacks/${id}/responses`, { params }).then((r) => r.data);
+
+export const saveFeedbackResponse = (id, data) =>
+  api.put(`/feedbacks/${id}/responses`, data).then((r) => r.data);
+
+export const getFeedbackMemberReport = (id, membroId) =>
+  api.get(`/feedbacks/${id}/member-report`, { params: { membroId } }).then((r) => r.data);
 
 export default api;
