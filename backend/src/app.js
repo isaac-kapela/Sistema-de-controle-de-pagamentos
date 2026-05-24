@@ -43,6 +43,7 @@ app.use('/api/attendances', require('./routes/attendances'));
 app.use('/api/cantina',    require('./routes/cantina'));
 app.use('/api/stock',      require('./routes/stock'));
 app.use('/api/feedbacks',  require('./routes/feedbacks'));
+app.use('/api/logins',     require('./routes/platformCredentials'));
 
 // Health check
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
