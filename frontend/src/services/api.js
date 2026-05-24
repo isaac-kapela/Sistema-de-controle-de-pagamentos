@@ -195,4 +195,17 @@ export const saveFeedbackResponse = (id, data) =>
 export const getFeedbackMemberReport = (id, membroId) =>
   api.get(`/feedbacks/${id}/member-report`, { params: { membroId } }).then((r) => r.data);
 
+// ─── Log In (credenciais de plataformas) ─────────────────────
+export const getLogins = (params = {}) =>
+  api.get('/logins', { params }).then((r) => r.data);
+
+export const createLogin = (data) =>
+  api.post('/logins', data).then((r) => r.data);
+
+export const updateLogin = (id, data) =>
+  api.put(`/logins/${id}`, data).then((r) => r.data);
+
+export const deleteLogin = (id) =>
+  api.delete(`/logins/${id}`).then((r) => r.data);
+
 export default api;

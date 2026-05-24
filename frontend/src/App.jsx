@@ -9,6 +9,7 @@ import AttendancePage from './pages/AttendancePage';
 import CantinaPage from './pages/CantinaPage';
 import EstoquePage from './pages/EstoquePage';
 import FeedbacksPage from './pages/FeedbacksPage';
+import LogInPage from './pages/LogInPage';
 
 export default function App() {
   const { isAdmin, logout } = useAuth();
@@ -54,6 +55,9 @@ export default function App() {
         <NavLink to="/feedbacks" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
           Feedbacks
         </NavLink>
+        <NavLink to="/login" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
+          Log In
+        </NavLink>
       </nav>
 
       {/* Conteudo */}
@@ -66,6 +70,7 @@ export default function App() {
           <Route path="/cantina" element={<CantinaPage />} />
           <Route path="/estoque" element={<EstoquePage />} />
           <Route path="/feedbacks" element={<FeedbacksPage />} />
+          <Route path="/login" element={<LogInPage />} />
         </Routes>
       </main>
 
