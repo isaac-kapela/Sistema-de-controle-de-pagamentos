@@ -114,23 +114,25 @@ export default function PaymentsPage() {
 
 const s = {
   toolbar: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    flexWrap: 'wrap', gap: 12, marginBottom: 24,
+    display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between',
+    flexWrap: 'wrap', gap: 10, marginBottom: 20,
   },
-  toolbarLeft: { display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' },
-  toolbarRight: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
-  period: { fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 },
+  toolbarLeft: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  toolbarRight: { display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' },
+  period: { fontSize: 13, color: 'var(--text-muted)', fontWeight: 500 },
   btnOutline: {
     background: 'transparent', color: 'var(--text-muted)',
-    border: '1px solid var(--border)', padding: '9px 16px',
+    border: '1px solid var(--border)', padding: '8px 14px',
     borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   btnPrimary: {
     background: 'var(--primary)', color: '#fff',
-    padding: '9px 18px', borderRadius: 'var(--radius)',
-    fontSize: 14, fontWeight: 600,
+    padding: '8px 16px', borderRadius: 'var(--radius)',
+    fontSize: 13, fontWeight: 600,
     boxShadow: '0 2px 8px rgba(168,3,3,0.4)',
     cursor: 'pointer', border: 'none',
+    whiteSpace: 'nowrap',
   },
   center: {
     display: 'flex', flexDirection: 'column',

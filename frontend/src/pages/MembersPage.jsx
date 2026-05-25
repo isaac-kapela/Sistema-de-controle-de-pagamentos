@@ -118,26 +118,29 @@ export default function MembersPage() {
 
 const s = {
   toolbar: {
-    display: 'flex', alignItems: 'center',
-    justifyContent: 'space-between', gap: 12,
-    marginBottom: 24, flexWrap: 'wrap',
+    display: 'flex', alignItems: 'flex-start',
+    justifyContent: 'space-between', gap: 10,
+    marginBottom: 20, flexWrap: 'wrap',
   },
-  toolbarRight: { display: 'flex', gap: 10, flexWrap: 'wrap' },
+  toolbarRight: { display: 'flex', gap: 8, flexWrap: 'wrap' },
   btnBack: {
     background: 'transparent', color: 'var(--text-muted)',
-    border: '1px solid var(--border)', padding: '9px 16px',
+    border: '1px solid var(--border)', padding: '8px 14px',
     borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   btnOutline: {
     background: 'transparent', color: 'var(--text-muted)',
-    border: '1px solid var(--border)', padding: '9px 16px',
+    border: '1px solid var(--border)', padding: '8px 14px',
     borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   btnPrimary: {
     background: 'var(--primary)', color: '#fff',
-    padding: '9px 18px', borderRadius: 'var(--radius)',
-    fontSize: 14, fontWeight: 600,
+    padding: '8px 16px', borderRadius: 'var(--radius)',
+    fontSize: 13, fontWeight: 600,
     boxShadow: '0 2px 8px rgba(168,3,3,0.4)',
     cursor: 'pointer', border: 'none',
+    whiteSpace: 'nowrap',
   },
 };

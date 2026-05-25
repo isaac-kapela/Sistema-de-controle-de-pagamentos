@@ -30,26 +30,26 @@ export default function SummaryCards({ summary }) {
 const styles = {
   grid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-    gap: 12,
-    marginBottom: 24,
+    gridTemplateColumns: 'repeat(auto-fill, minmax(min(140px, calc(50% - 6px)), 1fr))',
+    gap: 10,
+    marginBottom: 20,
   },
   card: {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius)',
-    padding: '16px 20px',
+    padding: 'clamp(12px, 2vw, 16px) clamp(12px, 2vw, 20px)',
     display: 'flex',
     flexDirection: 'column',
     gap: 4,
     boxShadow: 'var(--shadow)',
   },
   value: {
-    fontSize: 20,
+    fontSize: 'clamp(16px, 3vw, 20px)',
     fontWeight: 700,
   },
   label: {
-    fontSize: 12,
+    fontSize: 11,
     color: 'var(--text-muted)',
     textTransform: 'uppercase',
     letterSpacing: '0.05em',

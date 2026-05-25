@@ -906,7 +906,7 @@ function ApplyPickerModal({ campaign, onClose }) {
 
 const s = {
   page: {
-    padding: '28px 32px',
+    padding: 'clamp(14px, 3vw, 28px) clamp(14px, 4vw, 32px)',
     maxWidth: 1100,
     margin: '0 auto',
     width: '100%',
@@ -944,8 +944,8 @@ const s = {
   },
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
-    gap: 14,
+    gridTemplateColumns: 'repeat(auto-fill, minmax(min(160px, 100%), 1fr))',
+    gap: 12,
     marginBottom: 24,
   },
   statCard: {
@@ -988,7 +988,7 @@ const s = {
     padding: '8px 14px',
     fontSize: 13,
     flex: 1,
-    minWidth: 180,
+    minWidth: 0,
     outline: 'none',
   },
   filterSelect: {
@@ -1000,6 +1000,8 @@ const s = {
     fontSize: 13,
     cursor: 'pointer',
     outline: 'none',
+    minWidth: 0,
+    flex: '1 1 140px',
   },
   clearBtn: {
     background: 'transparent',
@@ -1189,8 +1191,8 @@ const s = {
   },
   statsRow: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: 12,
+    gridTemplateColumns: 'repeat(auto-fill, minmax(min(130px, 100%), 1fr))',
+    gap: 10,
     marginBottom: 24,
   },
   miniCard: {
@@ -1259,7 +1261,8 @@ const s = {
     alignItems: 'center',
     gap: 8,
     flex: 1,
-    minWidth: 200,
+    minWidth: 0,
+    flexWrap: 'wrap',
   },
   memberProgressPct: {
     fontSize: 12,
@@ -1280,6 +1283,8 @@ const s = {
     justifyContent: 'space-between',
     padding: '8px 0',
     borderBottom: '1px solid var(--border)',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   avgName: {
     fontSize: 13,
@@ -1470,6 +1475,7 @@ const s = {
     padding: '9px 0',
     borderBottom: '1px solid var(--border)',
     gap: 8,
+    flexWrap: 'wrap',
   },
   codeName: {
     fontSize: 13,

@@ -188,21 +188,21 @@ export default function AttendanceDashboard({ semesterId }) {
           <h4 style={chartTitle}>Ranking de Presença</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[...perUser].sort((a, b) => b.rate - a.rate).map((u, i) => (
-              <div key={u.userId} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                <span style={{ width: 24, color: 'var(--text-muted)', fontSize: 13, fontWeight: 700 }}>{i + 1}.</span>
-                <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{u.name}</span>
-                <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--text-muted)' }}>
+              <div key={u.userId} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ width: 20, color: 'var(--text-muted)', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>
+                <span style={{ flex: '1 1 120px', fontSize: 13, fontWeight: 500, minWidth: 0 }}>{u.name}</span>
+                <div style={{ display: 'flex', gap: 8, fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>
                   <span style={{ color: '#22c55e' }}>{u.present}P</span>
                   <span style={{ color: '#f59e0b' }}>{u.late}A</span>
                   <span style={{ color: '#a855f7' }}>{u.online || 0}O</span>
                   <span style={{ color: '#ef4444' }}>{u.absent}F</span>
                   <span style={{ color: '#3b82f6' }}>{u.justified}J</span>
                 </div>
-                <div style={{ width: 120, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 100, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                   <div style={{ flex: 1, height: 6, borderRadius: 3, background: '#2a2a2a', overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${u.rate}%`, background: rateColor(u.rate), borderRadius: 3, transition: 'width 0.4s' }} />
                   </div>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: rateColor(u.rate), minWidth: 36, textAlign: 'right' }}>{u.rate}%</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: rateColor(u.rate), minWidth: 32, textAlign: 'right' }}>{u.rate}%</span>
                 </div>
               </div>
             ))}
@@ -221,13 +221,13 @@ export default function AttendanceDashboard({ semesterId }) {
 
 function StatCard({ label, value, sub, color }) {
   return (
-    <div style={{ background: 'var(--bg-card)', borderRadius: 12, padding: '18px 20px', border: '1px solid var(--border)' }}>
+    <div style={{ background: 'var(--bg-card)', borderRadius: 12, padding: 'clamp(12px, 2vw, 18px) clamp(12px, 2vw, 20px)', border: '1px solid var(--border)' }}>
       <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>{label}</p>
-      <p style={{ margin: '6px 0 0', fontSize: 24, fontWeight: 800, color }}>{value}</p>
+      <p style={{ margin: '6px 0 0', fontSize: 'clamp(18px, 4vw, 24px)', fontWeight: 800, color }}>{value}</p>
       {sub && <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{sub}</p>}
     </div>
   );
 }
 
-const chartCard = { background: 'var(--bg-card)', borderRadius: 12, padding: '18px 20px', border: '1px solid var(--border)' };
+const chartCard = { background: 'var(--bg-card)', borderRadius: 12, padding: 'clamp(12px, 2vw, 18px) clamp(12px, 2vw, 20px)', border: '1px solid var(--border)', overflowX: 'auto' };
 const chartTitle = { margin: '0 0 16px', fontSize: 15, fontWeight: 700 };

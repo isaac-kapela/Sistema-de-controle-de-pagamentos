@@ -28,6 +28,13 @@ body {
   font-size: 14px;
   line-height: 1.5;
   min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Prevent overflow on all containers */
+#root {
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
 button {
@@ -67,7 +74,17 @@ input, select {
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
+  min-width: 0;
 }
+
+/* ── Nav tabs ── */
+.app-nav {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.app-nav::-webkit-scrollbar { display: none; }
 
 .header-actions {
   display: flex;
@@ -136,7 +153,7 @@ input, select {
   }
 
   .app-main {
-    padding: 12px 14px;
+    padding: 12px 12px;
   }
 
   .header-actions {
@@ -165,7 +182,7 @@ input, select {
   }
 
   .app-title {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   /* Tabela oculta, cards visíveis */
@@ -228,5 +245,53 @@ input, select {
   }
   .save-row-responsive > button {
     width: 100%;
+  }
+
+  /* Credenciais mobile card */
+  .cred-table-wrap {
+    display: none !important;
+  }
+  .cred-cards-mobile {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* Toolbar de página: empilha verticalmente */
+  .page-toolbar-mobile {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .page-toolbar-mobile > * {
+    width: 100%;
+    text-align: center;
+  }
+}
+
+/* Desktop: oculta cards mobile de credenciais */
+@media (min-width: 641px) {
+  .cred-cards-mobile {
+    display: none !important;
+  }
+}
+
+/* ── Small mobile (< 480px) ──────────────────────────── */
+@media (max-width: 480px) {
+  /* Oculta decoracao hero */
+  .hero-art-deco {
+    display: none !important;
+  }
+
+  /* Botões do hero ficam em coluna */
+  .hero-btns-responsive {
+    flex-direction: column !important;
+  }
+  .hero-btns-responsive > button {
+    width: 100%;
+  }
+
+  /* Cards de pagamento menores */
+  .summary-cards-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }

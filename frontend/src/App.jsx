@@ -33,9 +33,9 @@ export default function App() {
       </header>
 
       {/* Navegacao por abas */}
-      <nav style={s.tabBar}>
+      <nav className="app-nav" style={s.tabBar}>
         <NavLink to="/" end style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
-          Pagamentos GMM
+          Pagamentos
         </NavLink>
         <NavLink to="/membros" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
           Membros
@@ -81,33 +81,36 @@ export default function App() {
 
 const s = {
   page: { minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-  brand: { display: 'flex', alignItems: 'center', gap: 14 },
-  logo: { height: 48, width: 48, objectFit: 'contain', borderRadius: 8 },
+  brand: { display: 'flex', alignItems: 'center', gap: 10 },
+  logo: { height: 40, width: 40, objectFit: 'contain', borderRadius: 8, flexShrink: 0 },
   adminBtn: {
     background: 'transparent', color: 'var(--text-muted)',
-    border: '1px solid var(--border)', padding: '9px 18px',
-    borderRadius: 'var(--radius)', fontSize: 14, fontWeight: 500, cursor: 'pointer',
+    border: '1px solid var(--border)', padding: '8px 14px',
+    borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   logoutBtn: {
     background: 'transparent', color: 'var(--primary)',
-    border: '1px solid var(--primary)', padding: '9px 18px',
-    borderRadius: 'var(--radius)', fontSize: 14, fontWeight: 500, cursor: 'pointer',
+    border: '1px solid var(--primary)', padding: '8px 14px',
+    borderRadius: 'var(--radius)', fontSize: 13, fontWeight: 500, cursor: 'pointer',
+    whiteSpace: 'nowrap',
   },
   tabBar: {
     background: 'var(--bg-card)',
     borderBottom: '1px solid var(--border)',
     display: 'flex',
-    paddingLeft: 32,
+    paddingLeft: 'clamp(8px, 3vw, 32px)',
   },
   tab: {
     color: 'var(--text-muted)',
     textDecoration: 'none',
     borderBottom: '2px solid transparent',
-    padding: '12px 20px',
-    fontSize: 14,
+    padding: 'clamp(10px, 2vw, 12px) clamp(10px, 2.5vw, 20px)',
+    fontSize: 'clamp(12px, 2vw, 14px)',
     fontWeight: 500,
     display: 'inline-block',
     transition: 'color 0.15s, border-color 0.15s',
+    whiteSpace: 'nowrap',
   },
   tabActive: {
     color: 'var(--text)',

@@ -101,7 +101,7 @@ const styles = {
   },
   input: {
     flex: 1,
-    minWidth: 180,
+    minWidth: 0,
     background: 'var(--bg-card2)',
     border: '1px solid var(--border)',
     borderRadius: 8,

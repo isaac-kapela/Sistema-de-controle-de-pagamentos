@@ -91,7 +91,7 @@ function CredentialModal({ item, onClose, onSaved }) {
   );
 }
 
-// ── Linha da tabela ───────────────────────────────────────────
+// ── Linha da tabela (desktop) ─────────────────────────────────
 function CredentialRow({ item, onEdit, onDelete }) {
   const [showSenha, setShowSenha] = useState(false);
 
@@ -130,6 +130,58 @@ function CredentialRow({ item, onEdit, onDelete }) {
         <button style={s.deleteBtn} onClick={() => onDelete(item)}>Excluir</button>
       </td>
     </tr>
+  );
+}
+
+// ── Card mobile de credencial ─────────────────────────────────
+function CredentialCard({ item, onEdit, onDelete }) {
+  const [showSenha, setShowSenha] = useState(false);
+
+  function copiar(texto, label) {
+    navigator.clipboard.writeText(texto).then(() => toast.success(`${label} copiado`));
+  }
+
+  return (
+    <div style={s.credCard}>
+      <div style={s.credCardHeader}>
+        <div>
+          <span style={s.platName}>{item.plataforma}</span>
+          {item.categoria && <span style={{ ...s.catBadge, marginLeft: 8 }}>{item.categoria}</span>}
+        </div>
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button style={s.editBtn} onClick={() => onEdit(item)}>Editar</button>
+          <button style={s.deleteBtn} onClick={() => onDelete(item)}>Excluir</button>
+        </div>
+      </div>
+
+      {item.emailUsuario && (
+        <div style={s.credCardRow}>
+          <span style={s.credCardLabel}>E-mail</span>
+          <div style={s.copyWrap}>
+            <span style={{ ...s.monoText, wordBreak: 'break-all' }}>{item.emailUsuario}</span>
+            <button style={s.copyBtn} onClick={() => copiar(item.emailUsuario, 'E-mail')}>Copiar</button>
+          </div>
+        </div>
+      )}
+
+      {item.senha && (
+        <div style={s.credCardRow}>
+          <span style={s.credCardLabel}>Senha</span>
+          <div style={s.copyWrap}>
+            <span style={s.monoText}>{showSenha ? item.senha : '••••••••'}</span>
+            <button style={s.eyeSmall} onClick={() => setShowSenha((v) => !v)}>{showSenha ? '🙈' : '👁'}</button>
+            <button style={s.copyBtn} onClick={() => copiar(item.senha, 'Senha')}>Copiar</button>
+          </div>
+        </div>
+      )}
+
+      {item.obs && (
+        <div style={{ ...s.credCardRow, marginBottom: 0 }}>
+          <span style={s.credCardLabel}>Obs</span>
+          <span style={{ ...s.obsText, flex: 1 }}>{item.obs}</span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -266,7 +318,9 @@ function AdminLogInView() {
         groupKeys.map((cat) => (
           <div key={cat} style={s.group}>
             <div style={s.groupHeader}>{cat}</div>
-            <div style={s.tableWrap}>
+
+            {/* Desktop: tabela */}
+            <div className="cred-table-wrap" style={s.tableWrap}>
               <table style={s.table}>
                 <thead>
                   <tr>
@@ -289,6 +343,18 @@ function AdminLogInView() {
                 </tbody>
               </table>
             </div>
+
+            {/* Mobile: cards */}
+            <div className="cred-cards-mobile">
+              {groups[cat].map((item) => (
+                <CredentialCard
+                  key={item._id}
+                  item={item}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
           </div>
         ))
       )}
@@ -306,7 +372,7 @@ function AdminLogInView() {
 
 const s = {
   page: {
-    padding: '28px 32px',
+    padding: 'clamp(14px, 3vw, 28px) clamp(14px, 4vw, 32px)',
     maxWidth: 1200,
     margin: '0 auto',
     width: '100%',
@@ -501,7 +567,7 @@ const s = {
   modalTitle: { fontSize: 17, fontWeight: 700, color: 'var(--text)', margin: 0 },
   closeBtn: { background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: 18, cursor: 'pointer', padding: 4 },
   modalBody: { padding: 24, overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 14 },
-  formGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 },
+  formGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(200px, 100%), 1fr))', gap: 14 },
   label: { display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12, fontWeight: 600, color: 'var(--text-muted)' },
   input: {
     background: 'var(--bg-card2, var(--bg-card))',
@@ -546,6 +612,42 @@ const s = {
     fontWeight: 600,
     cursor: 'pointer',
   },
+  // Mobile credential cards
+  credCard: {
+    background: 'var(--bg-card)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    padding: '12px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    boxShadow: 'var(--shadow)',
+  },
+  credCardHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    flexWrap: 'wrap',
+    marginBottom: 4,
+  },
+  credCardRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    marginBottom: 4,
+  },
+  credCardLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    minWidth: 42,
+    flexShrink: 0,
+  },
+
   // Restricted
   restricted: {
     display: 'flex',

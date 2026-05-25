@@ -31,7 +31,7 @@ export default function MembersLanding({ onCadastrar, isAdmin, onVerLista, onVer
         </div>
 
         {/* Decoracao lateral */}
-        <div style={s.heroArt}>
+        <div className="hero-art-deco" style={s.heroArt}>
           <div style={s.artCircle1} />
           <div style={s.artCircle2} />
           <div style={s.artBar} />
@@ -94,7 +94,7 @@ const s = {
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 32,
-    padding: '56px 0 48px',
+    padding: 'clamp(24px, 5vw, 56px) 0 clamp(20px, 4vw, 48px)',
     position: 'relative',
     overflow: 'hidden',
   },
@@ -128,11 +128,11 @@ const s = {
     color: 'var(--primary)',
   },
   heroSub: {
-    fontSize: 16,
+    fontSize: 'clamp(13px, 2vw, 16px)',
     color: 'var(--text-muted)',
     lineHeight: 1.7,
     maxWidth: 520,
-    marginBottom: 32,
+    marginBottom: 28,
   },
   heroBtns: {
     display: 'flex',
@@ -142,9 +142,9 @@ const s = {
   btnPrimary: {
     background: 'var(--primary)',
     color: '#fff',
-    padding: '13px 28px',
+    padding: 'clamp(10px, 2vw, 13px) clamp(16px, 3vw, 28px)',
     borderRadius: 'var(--radius)',
-    fontSize: 15,
+    fontSize: 'clamp(13px, 2vw, 15px)',
     fontWeight: 700,
     boxShadow: '0 4px 20px rgba(168,3,3,0.4)',
     border: 'none',
@@ -155,9 +155,9 @@ const s = {
   btnSecondary: {
     background: 'transparent',
     color: 'var(--text-muted)',
-    padding: '13px 28px',
+    padding: 'clamp(10px, 2vw, 13px) clamp(16px, 3vw, 28px)',
     borderRadius: 'var(--radius)',
-    fontSize: 15,
+    fontSize: 'clamp(13px, 2vw, 15px)',
     fontWeight: 600,
     border: '1px solid var(--border)',
     cursor: 'pointer',
@@ -243,11 +243,11 @@ const s = {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius)',
-    padding: '32px 36px',
+    padding: 'clamp(18px, 4vw, 32px) clamp(16px, 4vw, 36px)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 24,
+    gap: 16,
     flexWrap: 'wrap',
   },
   ctaText: {
