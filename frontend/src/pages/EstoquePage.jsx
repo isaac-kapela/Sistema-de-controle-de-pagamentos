@@ -559,19 +559,13 @@ export default function EstoquePage() {
           <button style={s.btnOutline} onClick={() => setShowShoppingList(true)}>
             Lista de Compras
           </button>
-          {isAdmin && (
-            <button style={s.btnAlert} onClick={handleAlertAll} disabled={alerting}>
-              {alerting ? 'Enviando...' : 'Alertar Email'}
-            </button>
-          )}
-          {isAdmin && (
-            <button style={s.btnOutline} onClick={() => setShowCatMgr(true)}>
-              Categorias
-            </button>
-          )}
-          {isAdmin && (
-            <button style={s.btnPrimary} onClick={openCreate}>+ Adicionar item</button>
-          )}
+          <button style={s.btnAlert} onClick={handleAlertAll} disabled={alerting}>
+            {alerting ? 'Enviando...' : 'Alertar Email'}
+          </button>
+          <button style={s.btnOutline} onClick={() => setShowCatMgr(true)}>
+            Categorias
+          </button>
+          <button style={s.btnPrimary} onClick={openCreate}>+ Adicionar item</button>
         </div>
       </div>
 
