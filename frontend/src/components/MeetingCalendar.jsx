@@ -45,7 +45,7 @@ export default function MeetingCalendar({ semesterId, onSelectMeeting, isAdmin }
   const meetingByDay = {};
   for (const m of meetings) {
     const d = new Date(m.date);
-    const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const key = `${d.getUTCFullYear()}-${d.getUTCMonth()}-${d.getUTCDate()}`;
     meetingByDay[key] = m;
   }
 
