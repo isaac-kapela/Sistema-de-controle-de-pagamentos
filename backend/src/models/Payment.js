@@ -1,77 +1,33 @@
 const mongoose = require('mongoose');
 
-const GASOLINA = 5.0;
-const DRIVE = 2.27;
+const chargeEntrySchema = new mongoose.Schema({
+  chargeTypeId: { type: mongoose.Schema.Types.ObjectId, ref: 'ChargeType' },
+  name: { type: String, required: true },
+  value: { type: Number, required: true },
+  paid: { type: Boolean, default: false },
+  paidAt: { type: Date, default: null },
+}, { _id: true });
 
-const paymentSchema = new mongoose.Schema(
-  {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    month: {
-      type: Number,
-      required: true,
-      min: 1,
-      max: 12,
-    },
-    year: {
-      type: Number,
-      required: true,
-    },
-    // Valores individuais para gasolina e drive
-    gasolinaPaid: {
-      type: Boolean,
-      default: false,
-    },
-    gasolinaPaidAt: {
-      type: Date,
-      default: null,
-      
-    },
-    drivePaid: {
-      type: Boolean,
-      default: false,
-    },
-    drivePaidAt: {
-      type: Date,
-      default: null,
-    },
-    // Indica se é motorista (snapshot no momento do registro)
-    isDriver: {
-      type: Boolean,
-      required: true,
-    },
-    // Valor total devido no mês
-    amount: {
-      type: Number,
-      required: true,
-    },
-  },
-  { timestamps: true }
-);
+const paymentSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  month: { type: Number, required: true, min: 1, max: 12 },
+  year: { type: Number, required: true },
+  isDriver: { type: Boolean, required: true },
+  charges: [chargeEntrySchema],
+}, { timestamps: true });
 
-// Índice único por usuário/mês/ano
 paymentSchema.index({ userId: 1, month: 1, year: 1 }, { unique: true });
 
-// Campo virtual: pagamento totalmente quitado
-paymentSchema.virtual('fullyPaid').get(function () {
-  if (this.isDriver) return this.drivePaid;
-  return this.gasolinaPaid && this.drivePaid;
+paymentSchema.virtual('amount').get(function () {
+  return this.charges.reduce((s, c) => s + c.value, 0);
 });
 
-// Valor pago até agora
 paymentSchema.virtual('amountPaid').get(function () {
-  let total = 0;
-  if (this.gasolinaPaid) total += GASOLINA;
-  if (this.drivePaid) total += DRIVE;
-  return total;
+  return this.charges.filter(c => c.paid).reduce((s, c) => s + c.value, 0);
 });
 
-// Valor ainda pendente
-paymentSchema.virtual('amountPending').get(function () {
-  return this.amount - this.amountPaid;
+paymentSchema.virtual('fullyPaid').get(function () {
+  return this.charges.length > 0 && this.charges.every(c => c.paid);
 });
 
 paymentSchema.set('toJSON', { virtuals: true });

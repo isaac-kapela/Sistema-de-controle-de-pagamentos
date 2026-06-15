@@ -1,16 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { deleteUser, sendCharge } from '../services/api';
 import toast from 'react-hot-toast';
-import { useState } from 'react';
 
-const fmt = (v) =>
-  v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
-export default function PaymentRow({ payment, onToggle, onDeleted, isAdmin }) {
-  const { userId, fullyPaid, gasolinaPaid, drivePaid, amount, amountPaid, isDriver } = payment;
-
+export default function PaymentRow({ payment, chargeTypes, onToggle, onDeleted, isAdmin }) {
+  const { userId, fullyPaid, amount, amountPaid, isDriver, charges } = payment;
   const statusColor = fullyPaid ? 'var(--success)' : 'var(--danger)';
-
   const [sending, setSending] = useState(false);
 
   const handleCharge = async () => {
@@ -54,26 +50,21 @@ export default function PaymentRow({ payment, onToggle, onDeleted, isAdmin }) {
       {/* Valor devido */}
       <td style={{ ...styles.td, color: 'var(--text-muted)' }}>{fmt(amount)}</td>
 
-      {/* Gasolina — oculto para motoristas */}
-      <td style={styles.td}>
-        {!isDriver ? (
-          isAdmin
-            ? <CheckBtn checked={gasolinaPaid} onClick={() => onToggle(payment._id, 'gasolina')} />
-            : <StatusDot checked={gasolinaPaid} />
-        ) : (
-          <span style={styles.na}>—</span>
-        )}
-      </td>
+      {/* Uma coluna por tipo de cobrança */}
+      {chargeTypes.map((ct) => {
+        const charge = charges?.find(c => c.chargeTypeId === ct._id || c.chargeTypeId?.toString() === ct._id);
+        if (!charge) return <td key={ct._id} style={styles.td}><span style={styles.na}>—</span></td>;
+        return (
+          <td key={ct._id} style={styles.td}>
+            {isAdmin
+              ? <CheckBtn checked={charge.paid} onClick={() => onToggle(payment._id, charge.chargeTypeId)} />
+              : <StatusDot checked={charge.paid} />
+            }
+          </td>
+        );
+      })}
 
-      {/* Drive */}
-      <td style={styles.td}>
-        {isAdmin
-          ? <CheckBtn checked={drivePaid} onClick={() => onToggle(payment._id, 'drive')} />
-          : <StatusDot checked={drivePaid} />
-        }
-      </td>
-
-      {/* Pago / Pendente */}
+      {/* Status */}
       <td style={styles.td}>
         <span style={{ color: statusColor, fontWeight: 600 }}>
           {fullyPaid ? 'Pago' : `Falta ${fmt(amount - amountPaid)}`}
@@ -84,37 +75,22 @@ export default function PaymentRow({ payment, onToggle, onDeleted, isAdmin }) {
       <td style={styles.td}>
         <div style={{ display: 'flex', gap: 6 }}>
           {!fullyPaid && (
-            <button
-              onClick={() => onToggle(payment._id, 'all')}
-              style={{ ...styles.btn, background: 'var(--success-dark)' }}
-            >
+            <button onClick={() => onToggle(payment._id, 'all')} style={{ ...styles.btn, background: 'var(--success-dark)' }}>
               Marcar pago
             </button>
           )}
           {isAdmin && fullyPaid && (
-            <button
-              onClick={() => onToggle(payment._id, 'all')}
-              style={{ ...styles.btn, background: '#2a2a2a', border: '1px solid #3a3a3a' }}
-            >
+            <button onClick={() => onToggle(payment._id, 'all')} style={{ ...styles.btn, background: '#2a2a2a', border: '1px solid #3a3a3a' }}>
               Desfazer
             </button>
           )}
           {isAdmin && !fullyPaid && (
-            <button
-              onClick={handleCharge}
-              disabled={sending}
-              style={{ ...styles.btn, background: 'transparent', border: '1px solid #2e2e2e', color: 'var(--text-muted)', padding: '6px 10px', opacity: sending ? 0.5 : 1 }}
-              title="Enviar cobrança por email"
-            >
+            <button onClick={handleCharge} disabled={sending} style={{ ...styles.btn, background: 'transparent', border: '1px solid #2e2e2e', color: 'var(--text-muted)', padding: '6px 10px', opacity: sending ? 0.5 : 1 }} title="Enviar cobrança por email">
               ✉
             </button>
           )}
           {isAdmin && (
-            <button
-              onClick={handleDelete}
-              style={{ ...styles.btn, background: 'transparent', border: '1px solid #3a3a3a', color: 'var(--danger)', padding: '6px 10px' }}
-              title="Remover membro"
-            >
+            <button onClick={handleDelete} style={{ ...styles.btn, background: 'transparent', border: '1px solid #3a3a3a', color: 'var(--danger)', padding: '6px 10px' }} title="Remover membro">
               ✕
             </button>
           )}
@@ -126,10 +102,7 @@ export default function PaymentRow({ payment, onToggle, onDeleted, isAdmin }) {
 
 function StatusDot({ checked }) {
   return (
-    <span style={{
-      display: 'inline-block', width: 10, height: 10, borderRadius: '50%',
-      background: checked ? 'var(--success)' : 'var(--border)',
-    }} />
+    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: checked ? 'var(--success)' : 'var(--border)' }} />
   );
 }
 
@@ -145,8 +118,8 @@ function CheckBtn({ checked, onClick }) {
   );
 }
 
-export function PaymentCard({ payment, onToggle, onDeleted, isAdmin }) {
-  const { userId, fullyPaid, gasolinaPaid, drivePaid, amount, amountPaid, isDriver } = payment;
+export function PaymentCard({ payment, chargeTypes, onToggle, onDeleted, isAdmin }) {
+  const { userId, fullyPaid, amount, amountPaid, isDriver, charges } = payment;
   const statusColor = fullyPaid ? 'var(--success)' : 'var(--danger)';
   const [sending, setSending] = useState(false);
 
@@ -175,7 +148,6 @@ export function PaymentCard({ payment, onToggle, onDeleted, isAdmin }) {
 
   return (
     <div style={card.wrap}>
-      {/* Linha superior: nome + tipo + status */}
       <div style={card.top}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={styles.name}>{userId?.name || '—'}</div>
@@ -185,35 +157,29 @@ export function PaymentCard({ payment, onToggle, onDeleted, isAdmin }) {
           <span style={{ ...styles.badge, background: isDriver ? '#1a0000' : '#1f1f1f', border: `1px solid ${isDriver ? '#a80303' : '#3a3a3a'}`, color: isDriver ? '#a80303' : 'var(--text-muted)' }}>
             {isDriver ? 'Motorista' : 'Normal'}
           </span>
-          <div style={{ textAlign: 'right' }}>
-            <span style={{ color: statusColor, fontWeight: 700, fontSize: 13 }}>
-              {fullyPaid ? 'Pago' : `Falta ${fmt(amount - amountPaid)}`}
-            </span>
-          </div>
+          <span style={{ color: statusColor, fontWeight: 700, fontSize: 13 }}>
+            {fullyPaid ? 'Pago' : `Falta ${fmt(amount - amountPaid)}`}
+          </span>
         </div>
       </div>
 
-      {/* Checkboxes */}
+      {/* Cobranças dinâmicas */}
       <div style={card.checks}>
-        {!isDriver && (
-          <div style={card.checkItem}>
-            <span style={card.checkLabel}>Gasolina</span>
-            {isAdmin
-              ? <CheckBtn checked={gasolinaPaid} onClick={() => onToggle(payment._id, 'gasolina')} />
-              : <StatusDot checked={gasolinaPaid} />
-            }
-          </div>
-        )}
-        <div style={card.checkItem}>
-          <span style={card.checkLabel}>Drive</span>
-          {isAdmin
-            ? <CheckBtn checked={drivePaid} onClick={() => onToggle(payment._id, 'drive')} />
-            : <StatusDot checked={drivePaid} />
-          }
-        </div>
+        {chargeTypes.map((ct) => {
+          const charge = charges?.find(c => c.chargeTypeId === ct._id || c.chargeTypeId?.toString() === ct._id);
+          if (!charge) return null;
+          return (
+            <div key={ct._id} style={card.checkItem}>
+              <span style={card.checkLabel}>{ct.name}</span>
+              {isAdmin
+                ? <CheckBtn checked={charge.paid} onClick={() => onToggle(payment._id, charge.chargeTypeId)} />
+                : <StatusDot checked={charge.paid} />
+              }
+            </div>
+          );
+        })}
       </div>
 
-      {/* Ações */}
       {(!fullyPaid || isAdmin) && (
         <div style={card.actions}>
           {!fullyPaid && (
@@ -243,91 +209,22 @@ export function PaymentCard({ payment, onToggle, onDeleted, isAdmin }) {
 }
 
 const card = {
-  wrap: {
-    padding: '14px 16px',
-    borderBottom: '1px solid var(--border)',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 10,
-    background: 'var(--bg-card)',
-  },
-  top: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  topRight: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    gap: 4,
-    flexShrink: 0,
-  },
-  checks: {
-    display: 'flex',
-    gap: 20,
-    paddingTop: 8,
-    borderTop: '1px solid var(--border)',
-  },
-  checkItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 8,
-  },
-  checkLabel: {
-    fontSize: 12,
-    color: 'var(--text-muted)',
-  },
-  actions: {
-    display: 'flex',
-    gap: 6,
-  },
+  wrap: { padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--bg-card)' },
+  top: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+  topRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 },
+  checks: { display: 'flex', gap: 20, paddingTop: 8, borderTop: '1px solid var(--border)', flexWrap: 'wrap' },
+  checkItem: { display: 'flex', alignItems: 'center', gap: 8 },
+  checkLabel: { fontSize: 12, color: 'var(--text-muted)' },
+  actions: { display: 'flex', gap: 6 },
 };
 
 const styles = {
-  row: {
-    borderBottom: '1px solid var(--border)',
-    transition: 'background 0.15s',
-  },
-  td: {
-    padding: '12px 16px',
-    verticalAlign: 'middle',
-  },
-  name: {
-    fontWeight: 600,
-    fontSize: 14,
-  },
-  email: {
-    fontSize: 12,
-    color: 'var(--text-muted)',
-  },
-  badge: {
-    display: 'inline-block',
-    padding: '2px 8px',
-    borderRadius: 99,
-    fontSize: 11,
-    fontWeight: 600,
-    color: 'var(--text)',
-  },
-  na: {
-    color: 'var(--text-muted)',
-  },
-  check: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transition: 'all 0.15s',
-  },
-  btn: {
-    padding: '6px 12px',
-    borderRadius: 8,
-    fontSize: 12,
-    fontWeight: 600,
-    color: '#fff',
-    transition: 'opacity 0.15s',
-  },
+  row: { borderBottom: '1px solid var(--border)', transition: 'background 0.15s' },
+  td: { padding: '12px 16px', verticalAlign: 'middle' },
+  name: { fontWeight: 600, fontSize: 14 },
+  email: { fontSize: 12, color: 'var(--text-muted)' },
+  badge: { display: 'inline-block', padding: '2px 8px', borderRadius: 99, fontSize: 11, fontWeight: 600, color: 'var(--text)' },
+  na: { color: 'var(--text-muted)' },
+  check: { width: 24, height: 24, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', cursor: 'pointer' },
+  btn: { padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600, color: '#fff', transition: 'opacity 0.15s', cursor: 'pointer', border: 'none' },
 };

@@ -1,25 +1,20 @@
 const Payment = require('../models/Payment');
 const User = require('../models/User');
+const ChargeType = require('../models/ChargeType');
 const jwt = require('jsonwebtoken');
 
-const GASOLINA = 5.0;
-const DRIVE = 2.27;
-
-// Listar pagamentos de um mês/ano com dados do usuário
 const listPayments = async (req, res) => {
   try {
     const now = new Date();
     const month = parseInt(req.query.month) || now.getMonth() + 1;
     const year = parseInt(req.query.year) || now.getFullYear();
 
-    // Garante que todos os usuários ativos têm registro no mês
     await ensurePaymentsExist(month, year);
 
     const payments = await Payment.find({ month, year })
       .populate('userId', 'name email isDriver active')
       .sort({ 'userId.name': 1 });
 
-    // Filtra apenas usuários ativos
     const active = payments.filter((p) => p.userId && p.userId.active);
 
     const totalAmount = active.reduce((s, p) => s + p.amount, 0);
@@ -28,12 +23,10 @@ const listPayments = async (req, res) => {
     const countPaid = active.filter((p) => p.fullyPaid).length;
     const countPending = active.filter((p) => !p.fullyPaid).length;
 
-    const paymentsData = active.map((p) => p.toJSON());
-
     res.json({
       month,
       year,
-      payments: paymentsData,
+      payments: active.map((p) => p.toJSON()),
       summary: { totalAmount, totalPaid, totalPending, countPaid, countPending },
     });
   } catch (err) {
@@ -42,45 +35,75 @@ const listPayments = async (req, res) => {
   }
 };
 
-// Garante que todos os usuários ativos têm um registro de pagamento no mês
 const ensurePaymentsExist = async (month, year) => {
-  const users = await User.find({ active: true });
+  const [users, chargeTypes] = await Promise.all([
+    User.find({ active: true }),
+    ChargeType.find({ active: true }),
+  ]);
 
-  await Promise.all(
-    users.map((user) => {
-      const amount = user.isDriver ? DRIVE : GASOLINA + DRIVE;
-      return Payment.findOneAndUpdate(
-        { userId: user._id, month, year },
-        { $setOnInsert: { userId: user._id, month, year, isDriver: user.isDriver, amount } },
-        { upsert: true, new: true }
-      );
-    })
-  );
+  await Promise.all(users.map(async (user) => {
+    const applicableCharges = chargeTypes
+      .filter((ct) => {
+        if (ct.applicableTo === 'all') return true;
+        if (ct.applicableTo === 'drivers') return user.isDriver;
+        if (ct.applicableTo === 'non-drivers') return !user.isDriver;
+        return true;
+      })
+      .map((ct) => ({
+        chargeTypeId: ct._id,
+        name: ct.name,
+        value: ct.value,
+        paid: false,
+        paidAt: null,
+      }));
+
+    const existing = await Payment.findOneAndUpdate(
+      { userId: user._id, month, year },
+      { $setOnInsert: { userId: user._id, month, year, isDriver: user.isDriver, charges: applicableCharges } },
+      { upsert: true, new: true }
+    );
+
+    // Migra documentos antigos (gasolinaPaid/drivePaid → charges)
+    if (existing && existing.charges.length === 0) {
+      const raw = await Payment.collection.findOne({ _id: existing._id });
+      if (raw && (raw.drivePaid !== undefined || raw.gasolinaPaid !== undefined)) {
+        const migratedCharges = applicableCharges.map((c) => {
+          const ct = chargeTypes.find(t => t._id.toString() === c.chargeTypeId.toString());
+          if (ct?.name === 'Drive') return { ...c, paid: raw.drivePaid ?? false, paidAt: raw.drivePaidAt ?? null };
+          if (ct?.name === 'Gasolina') return { ...c, paid: raw.gasolinaPaid ?? false, paidAt: raw.gasolinaPaidAt ?? null };
+          return c;
+        });
+        await Payment.collection.updateOne({ _id: existing._id }, { $set: { charges: migratedCharges } });
+      }
+    }
+
+    // Adiciona cobranças novas que ainda não estão no documento existente
+    if (existing && existing.charges.length > 0) {
+      const existingIds = existing.charges.map(c => c.chargeTypeId.toString());
+      const missing = applicableCharges.filter(c => !existingIds.includes(c.chargeTypeId.toString()));
+      if (missing.length > 0) {
+        await Payment.updateOne({ _id: existing._id }, { $push: { charges: { $each: missing } } });
+      }
+    }
+  }));
 };
 
-// Alternar status de pagamento (gasolina ou drive)
 const togglePayment = async (req, res) => {
   try {
-    const { field } = req.body; // 'gasolina' | 'drive' | 'all'
-
-    if (!['gasolina', 'drive', 'all'].includes(field)) {
-      return res.status(400).json({ error: 'Campo inválido. Use "gasolina", "drive" ou "all".' });
-    }
+    const { field } = req.body; // chargeTypeId string | 'all'
 
     const payment = await Payment.findById(req.params.id);
     if (!payment) return res.status(404).json({ error: 'Pagamento não encontrado.' });
 
-    // Verifica se é uma ação de "desfazer" (remover marcação de pago)
-    const isUndo =
-      (field === 'all' && payment.fullyPaid) ||
-      (field === 'gasolina' && payment.gasolinaPaid) ||
-      (field === 'drive' && payment.drivePaid);
+    const isUndo = field === 'all'
+      ? payment.fullyPaid
+      : payment.charges.find(c => c.chargeTypeId.toString() === field)?.paid ?? false;
 
     if (isUndo) {
       const header = req.headers.authorization;
-      const token = header && header.startsWith('Bearer ') ? header.split(' ')[1] : null;
+      const token = header?.startsWith('Bearer ') ? header.split(' ')[1] : null;
       try {
-        if (!token) throw new Error('sem token');
+        if (!token) throw new Error();
         jwt.verify(token, process.env.JWT_SECRET);
       } catch {
         return res.status(403).json({ error: 'Apenas admins podem desfazer pagamentos.' });
@@ -88,38 +111,32 @@ const togglePayment = async (req, res) => {
     }
 
     if (field === 'all') {
-      // Toggle geral: se tudo está pago, desfaz; caso contrário, marca tudo
-      const fullyPaid = payment.fullyPaid;
-      if (!payment.isDriver) {
-        payment.gasolinaPaid = !fullyPaid;
-        payment.gasolinaPaidAt = !fullyPaid ? new Date() : null;
-      }
-      payment.drivePaid = !fullyPaid;
-      payment.drivePaidAt = !fullyPaid ? new Date() : null;
-    } else if (field === 'gasolina' && !payment.isDriver) {
-      payment.gasolinaPaid = !payment.gasolinaPaid;
-      payment.gasolinaPaidAt = payment.gasolinaPaid ? new Date() : null;
-    } else if (field === 'drive') {
-      payment.drivePaid = !payment.drivePaid;
-      payment.drivePaidAt = payment.drivePaid ? new Date() : null;
+      const target = !payment.fullyPaid;
+      payment.charges.forEach((c) => {
+        c.paid = target;
+        c.paidAt = target ? new Date() : null;
+      });
+    } else {
+      const charge = payment.charges.find(c => c.chargeTypeId.toString() === field);
+      if (!charge) return res.status(404).json({ error: 'Cobrança não encontrada no pagamento.' });
+      charge.paid = !charge.paid;
+      charge.paidAt = charge.paid ? new Date() : null;
     }
 
     await payment.save();
     await payment.populate('userId', 'name email isDriver active');
-    res.json(payment);
+    res.json(payment.toJSON());
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Erro ao atualizar pagamento.' });
   }
 };
 
-// Gerar registros de pagamento para todos os usuários ativos num mês
 const generatePayments = async (req, res) => {
   try {
     const now = new Date();
     const month = parseInt(req.body.month) || now.getMonth() + 1;
     const year = parseInt(req.body.year) || now.getFullYear();
-
     await ensurePaymentsExist(month, year);
     res.json({ message: `Pagamentos de ${month}/${year} gerados com sucesso.` });
   } catch (err) {

@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { startBirthdayCron } = require('./services/birthday');
 const { seedCategories }   = require('./models/StockCategory');
+const { seedDefaults: seedChargeTypes } = require('./controllers/chargeTypeController');
 
 const app = express();
 
@@ -43,7 +44,8 @@ app.use('/api/attendances', require('./routes/attendances'));
 app.use('/api/cantina',    require('./routes/cantina'));
 app.use('/api/stock',      require('./routes/stock'));
 app.use('/api/feedbacks',  require('./routes/feedbacks'));
-app.use('/api/logins',     require('./routes/platformCredentials'));
+app.use('/api/logins',       require('./routes/platformCredentials'));
+app.use('/api/charge-types', require('./routes/chargeTypes'));
 
 // Health check
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
@@ -51,8 +53,9 @@ app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
 // Inicia cron de aniversarios
 startBirthdayCron();
 
-// Seed categorias de estoque (só na primeira vez)
+// Seeds na primeira vez
 connectDB().then(seedCategories).catch(() => {});
+connectDB().then(seedChargeTypes).catch(() => {});
 
 // Inicia servidor apenas em desenvolvimento local
 if (require.main === module) {

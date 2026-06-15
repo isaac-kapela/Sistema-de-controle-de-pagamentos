@@ -195,6 +195,15 @@ export const saveFeedbackResponse = (id, data) =>
 export const getFeedbackMemberReport = (id, membroId) =>
   api.get(`/feedbacks/${id}/member-report`, { params: { membroId } }).then((r) => r.data);
 
+// ─── Tipos de cobrança ────────────────────────────────────────
+export const getChargeTypes = () => api.get('/charge-types').then((r) => r.data);
+
+export const createChargeType = (data) => api.post('/charge-types', data).then((r) => r.data);
+
+export const updateChargeType = (id, data) => api.put(`/charge-types/${id}`, data).then((r) => r.data);
+
+export const deleteChargeType = (id) => api.delete(`/charge-types/${id}`).then((r) => r.data);
+
 // ─── Log In (credenciais de plataformas) ─────────────────────
 export const getLogins = (params = {}) =>
   api.get('/logins', { params }).then((r) => r.data);

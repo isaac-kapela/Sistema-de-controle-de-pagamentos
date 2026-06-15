@@ -6,34 +6,29 @@ const MONTHS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 
-const COLS = [
-  { wch: 24 }, // Nome
-  { wch: 30 }, // Email
-  { wch: 12 }, // Tipo
-  { wch: 12 }, // Gasolina
-  { wch: 12 }, // Drive
-  { wch: 14 }, // Status geral
-  { wch: 18 }, // Valor devido
-  { wch: 16 }, // Valor pago
-  { wch: 18 }, // Valor pendente
-];
+function buildRows(payments, chargeTypes) {
+  return payments.map((p) => {
+    const row = {
+      'Nome': p.userId?.name || '—',
+      'Email': p.userId?.email || '—',
+      'Tipo': p.isDriver ? 'Motorista' : 'Normal',
+    };
 
-function buildRows(payments, monthName, year) {
-  return payments.map((p) => ({
-    'Nome':              p.userId?.name || '—',
-    'Email':             p.userId?.email || '—',
-    'Tipo':              p.isDriver ? 'Motorista' : 'Normal',
-    'Gasolina':          p.isDriver ? '—' : p.gasolinaPaid ? 'Pago' : 'Pendente',
-    'Drive':             p.drivePaid ? 'Pago' : 'Pendente',
-    'Status':            p.fullyPaid ? 'Pago' : 'Pendente',
-    'Valor devido (R$)': p.amount.toFixed(2).replace('.', ','),
-    'Valor pago (R$)':   p.amountPaid.toFixed(2).replace('.', ','),
-    'Pendente (R$)':     (p.amount - p.amountPaid).toFixed(2).replace('.', ','),
-  }));
+    for (const ct of chargeTypes) {
+      const charge = p.charges?.find(c => c.chargeTypeId === ct._id || c.chargeTypeId?.toString() === ct._id);
+      row[ct.name] = charge ? (charge.paid ? 'Pago' : 'Pendente') : '—';
+    }
+
+    row['Status'] = p.fullyPaid ? 'Pago' : 'Pendente';
+    row['Valor devido (R$)'] = p.amount.toFixed(2).replace('.', ',');
+    row['Valor pago (R$)'] = p.amountPaid.toFixed(2).replace('.', ',');
+    row['Pendente (R$)'] = (p.amount - p.amountPaid).toFixed(2).replace('.', ',');
+
+    return row;
+  });
 }
 
-// Exporta o ano inteiro — uma aba por mês
-export async function exportYearToExcel(year, onProgress) {
+export async function exportYearToExcel(year, chargeTypes = [], onProgress) {
   const wb = XLSX.utils.book_new();
 
   for (let m = 1; m <= 12; m++) {
@@ -43,8 +38,15 @@ export async function exportYearToExcel(year, onProgress) {
 
     if (data.payments.length === 0) continue;
 
-    const ws = XLSX.utils.json_to_sheet(buildRows(data.payments, monthName, year));
-    ws['!cols'] = COLS;
+    const rows = buildRows(data.payments, chargeTypes);
+    const ws = XLSX.utils.json_to_sheet(rows);
+
+    // Larguras dinâmicas
+    const fixedCols = [{ wch: 24 }, { wch: 30 }, { wch: 12 }];
+    const chargeCols = chargeTypes.map(() => ({ wch: 14 }));
+    const tailCols = [{ wch: 14 }, { wch: 18 }, { wch: 16 }, { wch: 18 }];
+    ws['!cols'] = [...fixedCols, ...chargeCols, ...tailCols];
+
     XLSX.utils.book_append_sheet(wb, ws, monthName);
   }
 
