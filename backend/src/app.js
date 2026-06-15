@@ -21,6 +21,8 @@ async function connectDB() {
     connectionPromise = mongoose.connect(process.env.MONGODB_URI, {
       serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 45000,
+      maxPoolSize: 1,
+      bufferTimeoutMS: 30000,
     }).catch((err) => {
       connectionPromise = null; // permite nova tentativa se falhar
       throw err;
