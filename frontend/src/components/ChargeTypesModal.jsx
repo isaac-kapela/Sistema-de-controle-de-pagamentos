@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
-import { createChargeType, updateChargeType, deleteChargeType } from '../services/api';
+import { createChargeType, updateChargeType, deleteChargeType, cleanupOrphanCharges } from '../services/api';
 
 const APPLICABLE_LABELS = { all: 'Todos', drivers: 'Só Motoristas', 'non-drivers': 'Só Não-Motoristas' };
 
@@ -33,6 +33,16 @@ export default function ChargeTypesModal({ chargeTypes, onClose, onSaved }) {
       toast.error(e.response?.data?.error || 'Erro ao salvar');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCleanup = async () => {
+    try {
+      const res = await cleanupOrphanCharges();
+      toast.success(res.message);
+      onSaved();
+    } catch {
+      toast.error('Erro ao limpar');
     }
   };
 
@@ -133,9 +143,14 @@ export default function ChargeTypesModal({ chargeTypes, onClose, onSaved }) {
           <button onClick={startNew} style={s.addBtn}>+ Nova cobrança</button>
         )}
 
-        <p style={{ marginTop: 16, fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-          Cobranças ativas são aplicadas nos novos pagamentos gerados. Pagamentos já existentes não são alterados retroativamente.
-        </p>
+        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5, margin: 0 }}>
+            Cobranças ativas são aplicadas nos novos pagamentos gerados.
+          </p>
+          <button onClick={handleCleanup} style={{ ...s.btnSm('warning'), whiteSpace: 'nowrap', fontSize: 11 }}>
+            Limpar excluídas
+          </button>
+        </div>
       </div>
     </div>
   );

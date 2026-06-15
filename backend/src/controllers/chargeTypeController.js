@@ -1,4 +1,5 @@
 const ChargeType = require('../models/ChargeType');
+const Payment = require('../models/Payment');
 
 const listChargeTypes = async (req, res) => {
   try {
@@ -33,7 +34,29 @@ const updateChargeType = async (req, res) => {
 const deleteChargeType = async (req, res) => {
   try {
     await ChargeType.findByIdAndDelete(req.params.id);
+    // Remove a cobrança de todos os pagamentos que ainda não foram pagos
+    await Payment.updateMany(
+      { 'charges.chargeTypeId': req.params.id },
+      { $pull: { charges: { chargeTypeId: req.params.id } } }
+    );
     res.json({ message: 'Removido' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Remove do array charges entradas cujo ChargeType não existe mais
+const cleanupOrphans = async (req, res) => {
+  try {
+    const existingIds = (await ChargeType.find({}, '_id')).map(ct => ct._id.toString());
+    const payments = await Payment.find({ 'charges.0': { $exists: true } });
+    let updated = 0;
+    for (const p of payments) {
+      const before = p.charges.length;
+      p.charges = p.charges.filter(c => existingIds.includes(c.chargeTypeId.toString()));
+      if (p.charges.length !== before) { await p.save(); updated++; }
+    }
+    res.json({ message: `${updated} pagamentos limpos.` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

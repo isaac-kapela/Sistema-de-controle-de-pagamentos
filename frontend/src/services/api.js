@@ -204,6 +204,8 @@ export const updateChargeType = (id, data) => api.put(`/charge-types/${id}`, dat
 
 export const deleteChargeType = (id) => api.delete(`/charge-types/${id}`).then((r) => r.data);
 
+export const cleanupOrphanCharges = () => api.post('/charge-types/cleanup-orphans').then((r) => r.data);
+
 // ─── Log In (credenciais de plataformas) ─────────────────────
 export const getLogins = (params = {}) =>
   api.get('/logins', { params }).then((r) => r.data);
