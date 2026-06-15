@@ -12,12 +12,21 @@ app.use(cors());
 app.use(express.json());
 
 // Conexão com MongoDB com cache (funciona em ambiente serverless)
-let cachedConn = null;
+// Armazena a Promise para evitar múltiplas conexões paralelas
+let connectionPromise = null;
 
 async function connectDB() {
-  if (cachedConn) return cachedConn;
-  cachedConn = await mongoose.connect(process.env.MONGODB_URI);
-  return cachedConn;
+  if (mongoose.connection.readyState === 1) return mongoose.connection;
+  if (!connectionPromise) {
+    connectionPromise = mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+    }).catch((err) => {
+      connectionPromise = null; // permite nova tentativa se falhar
+      throw err;
+    });
+  }
+  return connectionPromise;
 }
 
 // Garante conexão com MongoDB antes de cada request
