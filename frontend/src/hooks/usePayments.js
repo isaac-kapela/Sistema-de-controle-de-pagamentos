@@ -14,7 +14,7 @@ export function usePayments(month, year) {
     try {
       const [result, types] = await Promise.all([
         getPayments(month, year),
-        getChargeTypes(),
+        getChargeTypes().catch(() => []),
       ]);
       setData(result);
       setChargeTypes(types);
