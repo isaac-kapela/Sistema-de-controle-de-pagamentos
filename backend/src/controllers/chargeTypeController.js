@@ -23,8 +23,19 @@ const createChargeType = async (req, res) => {
 
 const updateChargeType = async (req, res) => {
   try {
+    const before = await ChargeType.findById(req.params.id);
+    if (!before) return res.status(404).json({ error: 'Não encontrado' });
+
     const ct = await ChargeType.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    if (!ct) return res.status(404).json({ error: 'Não encontrado' });
+
+    // Se foi desativada, remove a cobrança de todos os pagamentos existentes
+    if (before.active && ct.active === false) {
+      await Payment.updateMany(
+        { 'charges.chargeTypeId': ct._id },
+        { $pull: { charges: { chargeTypeId: ct._id } } }
+      );
+    }
+
     res.json(ct);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -74,4 +85,4 @@ const seedDefaults = async () => {
   }
 };
 
-module.exports = { listChargeTypes, createChargeType, updateChargeType, deleteChargeType, seedDefaults };
+module.exports = { listChargeTypes, createChargeType, updateChargeType, deleteChargeType, cleanupOrphans, seedDefaults };
