@@ -35,11 +35,23 @@ async function getMember(req, res) {
 // POST /api/members
 async function createMember(req, res) {
   try {
+    // Se existe membro inativo com mesmo CPF, reativa com os novos dados
+    const inactive = await Member.findOne({ cpf: req.body.cpf?.trim(), ativo: false });
+    if (inactive) {
+      const member = await Member.findByIdAndUpdate(
+        inactive._id,
+        { ...req.body, ativo: true },
+        { new: true, runValidators: true }
+      );
+      return res.status(200).json(member);
+    }
     const member = await Member.create(req.body);
     res.status(201).json(member);
   } catch (err) {
     if (err.code === 11000) {
-      return res.status(409).json({ error: 'CPF já cadastrado' });
+      const field = err.keyValue ? Object.keys(err.keyValue)[0] : 'cpf';
+      const label = field === 'email' ? 'Email' : 'CPF';
+      return res.status(409).json({ error: `${label} já cadastrado` });
     }
     if (err.name === 'ValidationError') {
       const msg = Object.values(err.errors).map((e) => e.message).join(', ');

@@ -23,6 +23,17 @@ const createUser = async (req, res) => {
       return res.status(400).json({ error: 'Nome e email são obrigatórios.' });
     }
 
+    // Se existe usuário inativo com mesmo email, reativa com os novos dados
+    const inactive = await User.findOne({ email: email.toLowerCase().trim(), active: false });
+    if (inactive) {
+      const user = await User.findByIdAndUpdate(
+        inactive._id,
+        { name, email, isDriver: !!isDriver, active: true },
+        { new: true }
+      );
+      return res.status(200).json(user);
+    }
+
     const user = await User.create({ name, email, isDriver: !!isDriver });
 
     // Gera pagamento para o mês corrente automaticamente
