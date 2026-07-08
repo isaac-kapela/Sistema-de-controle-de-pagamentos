@@ -11,7 +11,7 @@ router.get('/',              getItems);
 router.post('/',             requireAuth, createItem);
 router.put('/:id',           requireAuth, updateItem);
 router.delete('/:id',        requireAuth, deleteItem);
-router.patch('/:id/adjust',  requireAuth, adjustQty);
+router.patch('/:id/adjust',  adjustQty);
 router.post('/alert',        requireAuth, sendAlert);
 
 // ── categorias ─────────────────────────────────────────────────────────────

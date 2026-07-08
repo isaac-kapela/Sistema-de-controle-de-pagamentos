@@ -634,19 +634,15 @@ export default function EstoquePage() {
                     </td>
                     <td style={s.td}>
                       <div style={s.qtyRow}>
-                        {isAdmin && (
-                          <button style={s.qtyBtn}
-                            disabled={!!adjusting[item._id]}
-                            onClick={() => handleAdjust(item, -1)}>−</button>
-                        )}
+                        <button style={s.qtyBtn}
+                          disabled={!!adjusting[item._id]}
+                          onClick={() => handleAdjust(item, -1)}>−</button>
                         <span style={s.qtyVal}>
                           {item.quantidade} <span style={s.unit}>{item.unidade}</span>
                         </span>
-                        {isAdmin && (
-                          <button style={s.qtyBtn}
-                            disabled={!!adjusting[item._id]}
-                            onClick={() => handleAdjust(item, +1)}>+</button>
-                        )}
+                        <button style={s.qtyBtn}
+                          disabled={!!adjusting[item._id]}
+                          onClick={() => handleAdjust(item, +1)}>+</button>
                       </div>
                     </td>
                     <td style={s.td}>
@@ -682,18 +678,14 @@ export default function EstoquePage() {
                 </div>
 
                 <div style={s.mobileQtyRow}>
-                  {isAdmin && (
-                    <button style={s.qtyBtnLg} disabled={!!adjusting[item._id]}
-                      onClick={() => handleAdjust(item, -1)}>−</button>
-                  )}
+                  <button style={s.qtyBtnLg} disabled={!!adjusting[item._id]}
+                    onClick={() => handleAdjust(item, -1)}>−</button>
                   <div style={{ textAlign: 'center' }}>
                     <div style={s.qtyValLg}>{item.quantidade}</div>
                     <div style={s.unit}>{item.unidade}</div>
                   </div>
-                  {isAdmin && (
-                    <button style={s.qtyBtnLg} disabled={!!adjusting[item._id]}
-                      onClick={() => handleAdjust(item, +1)}>+</button>
-                  )}
+                  <button style={s.qtyBtnLg} disabled={!!adjusting[item._id]}
+                    onClick={() => handleAdjust(item, +1)}>+</button>
                 </div>
 
                 <div style={s.mobileInfo}>
