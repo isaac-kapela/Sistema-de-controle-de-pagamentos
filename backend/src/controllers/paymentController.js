@@ -41,8 +41,12 @@ const ensurePaymentsExist = async (month, year) => {
     ChargeType.find({ active: true }),
   ]);
 
+  // Só aplica cobranças criadas até o último dia do mês em questão
+  const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
+  const validForMonth = chargeTypes.filter(ct => new Date(ct.createdAt) <= monthEnd);
+
   await Promise.all(users.map(async (user) => {
-    const applicableCharges = chargeTypes
+    const applicableCharges = validForMonth
       .filter((ct) => {
         if (ct.applicableTo === 'all') return true;
         if (ct.applicableTo === 'drivers') return user.isDriver;
