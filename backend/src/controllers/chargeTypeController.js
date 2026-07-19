@@ -78,8 +78,8 @@ const seedDefaults = async () => {
   const count = await ChargeType.countDocuments();
   if (count === 0) {
     await ChargeType.insertMany([
-      { name: 'Gasolina', value: 5.0, applicableTo: 'non-drivers', active: true },
-      { name: 'Drive', value: 2.27, applicableTo: 'all', active: true },
+      { name: 'Gasolina', value: 5.0, applicableTo: 'non-drivers', active: true, splitAmongUsers: false },
+      { name: 'Drive', value: 2.27, applicableTo: 'all', active: true, splitAmongUsers: true },
     ]);
     console.log('ChargeTypes padrão criados: Gasolina, Drive');
   }

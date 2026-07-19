@@ -10,6 +10,8 @@ const chargeTypeSchema = new mongoose.Schema({
     enum: ['all', 'drivers', 'non-drivers'],
     default: 'all',
   },
+  // Se true, o valor total é dividido igualmente entre os usuários aplicáveis
+  splitAmongUsers: { type: Boolean, default: false },
 }, { timestamps: true });
 
 module.exports = mongoose.model('ChargeType', chargeTypeSchema);

@@ -45,6 +45,19 @@ const ensurePaymentsExist = async (month, year) => {
   const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
   const validForMonth = chargeTypes.filter(ct => new Date(ct.createdAt) <= monthEnd);
 
+  // Pré-calcula quantos usuários cada cobrança rateada tem
+  const countAll = users.length;
+  const countDrivers = users.filter(u => u.isDriver).length;
+  const countNonDrivers = users.filter(u => !u.isDriver).length;
+
+  const perUserValue = (ct) => {
+    if (!ct.splitAmongUsers) return ct.value;
+    const n = ct.applicableTo === 'drivers' ? countDrivers
+            : ct.applicableTo === 'non-drivers' ? countNonDrivers
+            : countAll;
+    return n > 0 ? Math.round((ct.value / n) * 100) / 100 : ct.value;
+  };
+
   await Promise.all(users.map(async (user) => {
     const applicableCharges = validForMonth
       .filter((ct) => {
@@ -56,7 +69,7 @@ const ensurePaymentsExist = async (month, year) => {
       .map((ct) => ({
         chargeTypeId: ct._id,
         name: ct.name,
-        value: ct.value,
+        value: perUserValue(ct),
         paid: false,
         paidAt: null,
       }));
@@ -72,21 +85,38 @@ const ensurePaymentsExist = async (month, year) => {
       const raw = await Payment.collection.findOne({ _id: existing._id });
       if (raw && (raw.drivePaid !== undefined || raw.gasolinaPaid !== undefined)) {
         const migratedCharges = applicableCharges.map((c) => {
-          const ct = chargeTypes.find(t => t._id.toString() === c.chargeTypeId.toString());
+          const ct = validForMonth.find(t => t._id.toString() === c.chargeTypeId.toString());
           if (ct?.name === 'Drive') return { ...c, paid: raw.drivePaid ?? false, paidAt: raw.drivePaidAt ?? null };
           if (ct?.name === 'Gasolina') return { ...c, paid: raw.gasolinaPaid ?? false, paidAt: raw.gasolinaPaidAt ?? null };
           return c;
         });
         await Payment.collection.updateOne({ _id: existing._id }, { $set: { charges: migratedCharges } });
+      } else if (applicableCharges.length > 0) {
+        // Documento sem dados legados (ex: criado pelo createUser antigo) — inicializa charges
+        await Payment.updateOne({ _id: existing._id }, { $set: { charges: applicableCharges } });
       }
     }
 
-    // Adiciona cobranças novas que ainda não estão no documento existente
+    // Adiciona cobranças novas + atualiza valor de cobranças rateadas não pagas
     if (existing && existing.charges.length > 0) {
       const existingIds = existing.charges.map(c => c.chargeTypeId.toString());
       const missing = applicableCharges.filter(c => !existingIds.includes(c.chargeTypeId.toString()));
       if (missing.length > 0) {
         await Payment.updateOne({ _id: existing._id }, { $push: { charges: { $each: missing } } });
+      }
+
+      // Recalcula valor das cobranças rateadas não pagas (nº de usuários pode ter mudado)
+      for (const charge of existing.charges) {
+        const ct = validForMonth.find(t => t._id.toString() === charge.chargeTypeId.toString());
+        if (ct?.splitAmongUsers && !charge.paid) {
+          const newValue = perUserValue(ct);
+          if (charge.value !== newValue) {
+            await Payment.updateOne(
+              { _id: existing._id, 'charges._id': charge._id },
+              { $set: { 'charges.$.value': newValue } }
+            );
+          }
+        }
       }
     }
   }));

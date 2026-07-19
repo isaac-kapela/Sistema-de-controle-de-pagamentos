@@ -4,7 +4,7 @@ import { createChargeType, updateChargeType, deleteChargeType, cleanupOrphanChar
 
 const APPLICABLE_LABELS = { all: 'Todos', drivers: 'Só Motoristas', 'non-drivers': 'Só Não-Motoristas' };
 
-const emptyForm = { name: '', value: '', applicableTo: 'all', active: true };
+const emptyForm = { name: '', value: '', applicableTo: 'all', active: true, splitAmongUsers: false };
 
 export default function ChargeTypesModal({ chargeTypes, onClose, onSaved }) {
   const [editing, setEditing] = useState(null); // _id | 'new' | null
@@ -12,14 +12,14 @@ export default function ChargeTypesModal({ chargeTypes, onClose, onSaved }) {
   const [loading, setLoading] = useState(false);
 
   const startNew = () => { setEditing('new'); setForm(emptyForm); };
-  const startEdit = (ct) => { setEditing(ct._id); setForm({ name: ct.name, value: String(ct.value), applicableTo: ct.applicableTo, active: ct.active }); };
+  const startEdit = (ct) => { setEditing(ct._id); setForm({ name: ct.name, value: String(ct.value), applicableTo: ct.applicableTo, active: ct.active, splitAmongUsers: ct.splitAmongUsers ?? false }); };
   const cancel = () => { setEditing(null); setForm(emptyForm); };
 
   const handleSave = async () => {
     if (!form.name || !form.value) { toast.error('Preencha nome e valor'); return; }
     setLoading(true);
     try {
-      const payload = { name: form.name, value: parseFloat(form.value), applicableTo: form.applicableTo, active: form.active };
+      const payload = { name: form.name, value: parseFloat(form.value), applicableTo: form.applicableTo, active: form.active, splitAmongUsers: form.splitAmongUsers };
       if (editing === 'new') {
         await createChargeType(payload);
         toast.success('Cobrança criada');
@@ -86,6 +86,7 @@ export default function ChargeTypesModal({ chargeTypes, onClose, onSaved }) {
                 <span style={{ fontWeight: 600, fontSize: 14 }}>{ct.name}</span>
                 <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 8 }}>
                   R$ {ct.value.toFixed(2).replace('.', ',')} · {APPLICABLE_LABELS[ct.applicableTo]}
+                  {ct.splitAmongUsers && <span style={{ marginLeft: 6, color: '#60a5fa' }}>÷ usuários</span>}
                 </span>
                 {!ct.active && <span style={s.inactiveBadge}>Inativa</span>}
               </div>
@@ -132,6 +133,14 @@ export default function ChargeTypesModal({ chargeTypes, onClose, onSaved }) {
                 <option value="non-drivers">Só Não-Motoristas</option>
               </select>
             </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={form.splitAmongUsers}
+                onChange={e => setForm(f => ({ ...f, splitAmongUsers: e.target.checked }))}
+              />
+              Dividir valor total entre os usuários (ex: Drive)
+            </label>
             <div style={{ display: 'flex', gap: 8, marginTop: 10, justifyContent: 'flex-end' }}>
               <button onClick={cancel} style={s.btnSm('secondary')}>Cancelar</button>
               <button onClick={handleSave} disabled={loading} style={s.btnSm('primary')}>
