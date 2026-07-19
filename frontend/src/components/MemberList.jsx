@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 function fmt(val) { return val || '—'; }
 function fmtDate(val) {
   if (!val) return '—';
-  return new Date(val).toLocaleDateString('pt-BR');
+  return new Date(val).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 }
 
 // Colunas publicas: nome, area, curso, empresa (ex), entrada, saida

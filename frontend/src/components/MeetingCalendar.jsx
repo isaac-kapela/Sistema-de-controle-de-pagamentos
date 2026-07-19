@@ -183,7 +183,7 @@ export default function MeetingCalendar({ semesterId, onSelectMeeting, isAdmin }
               <button onClick={() => setSelectedMeeting(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 18 }}>×</button>
             </div>
             <p style={{ margin: '0 0 8px', fontSize: 15 }}>
-              <strong>{new Date(selectedMeeting.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}</strong>
+              <strong>{new Date(selectedMeeting.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' })}</strong>
             </p>
             <p style={{ margin: '0 0 8px', color: 'var(--text-muted)', fontSize: 14 }}>Horário: {selectedMeeting.startTime}</p>
             <p style={{ margin: '0 0 16px' }}>

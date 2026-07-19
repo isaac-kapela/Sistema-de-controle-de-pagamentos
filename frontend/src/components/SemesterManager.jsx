@@ -355,8 +355,7 @@ export default function SemesterManager({ onSemesterChange }) {
 
 function formatDate(d) {
   if (!d) return '—';
-  const dt = new Date(d);
-  return dt.toLocaleDateString('pt-BR');
+  return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 }
 
 const btnStyle = (variant) => ({

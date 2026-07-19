@@ -485,8 +485,8 @@ function MemberFeedbackView() {
 
               <div style={s.cardMeta}>
                 <span style={s.metaItem}>
-                  {new Date(c.dataInicio).toLocaleDateString('pt-BR')} –{' '}
-                  {new Date(c.dataEncerramento).toLocaleDateString('pt-BR')}
+                  {new Date(c.dataInicio).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} –{' '}
+                  {new Date(c.dataEncerramento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                 </span>
                 <span style={s.metaItem}>{c.membros?.length || 0} membros</span>
                 <span style={s.metaItem}>{c.criterios?.length || 0} critérios</span>
@@ -747,8 +747,8 @@ function AdminFeedbackView() {
 
               <div style={s.cardMeta}>
                 <span style={s.metaItem}>
-                  {new Date(c.dataInicio).toLocaleDateString('pt-BR')} –{' '}
-                  {new Date(c.dataEncerramento).toLocaleDateString('pt-BR')}
+                  {new Date(c.dataInicio).toLocaleDateString('pt-BR', { timeZone: 'UTC' })} –{' '}
+                  {new Date(c.dataEncerramento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
                 </span>
                 <span style={s.metaItem}>
                   {c.membros?.length || 0} membros

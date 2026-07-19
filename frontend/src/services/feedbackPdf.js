@@ -35,7 +35,7 @@ function tipoLabel(tipo, tipoCustom) {
 
 function formatDate(d) {
   if (!d) return '';
-  return new Date(d).toLocaleDateString('pt-BR');
+  return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 }
 
 function calcAverage(respostas) {

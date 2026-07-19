@@ -256,7 +256,7 @@ export default function FeedbackApplyModal({ campaign, avaliadorId, onClose }) {
   }
 
   const prazo = campaign.dataEncerramento
-    ? new Date(campaign.dataEncerramento).toLocaleDateString('pt-BR')
+    ? new Date(campaign.dataEncerramento).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
     : null;
 
   const concluidos = completionCount();
