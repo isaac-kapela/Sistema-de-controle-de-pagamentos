@@ -4,10 +4,20 @@ import toast from 'react-hot-toast';
 
 const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+const MSG_GESTAO = 'Para desmarcar, entre em contato com alguém da gestão.';
+
 export default function PaymentRow({ payment, chargeTypes, onToggle, onDeleted, isAdmin }) {
   const { userId, fullyPaid, amount, amountPaid, isDriver, charges } = payment;
   const statusColor = fullyPaid ? 'var(--success)' : 'var(--danger)';
   const [sending, setSending] = useState(false);
+
+  const handleToggle = (id, field) => {
+    const isUndo = field === 'all'
+      ? fullyPaid
+      : charges.find(c => c.chargeTypeId === field || c.chargeTypeId?.toString() === field)?.paid ?? false;
+    if (isUndo && !isAdmin) { toast(MSG_GESTAO, { icon: 'ℹ️' }); return; }
+    onToggle(id, field);
+  };
 
   const handleCharge = async () => {
     setSending(true);
@@ -56,7 +66,7 @@ export default function PaymentRow({ payment, chargeTypes, onToggle, onDeleted, 
         if (!charge) return <td key={ct._id} style={styles.td}><span style={styles.na}>—</span></td>;
         return (
           <td key={ct._id} style={styles.td}>
-            <CheckBtn checked={charge.paid} onClick={() => onToggle(payment._id, charge.chargeTypeId)} />
+            <CheckBtn checked={charge.paid} onClick={() => handleToggle(payment._id, charge.chargeTypeId)} />
           </td>
         );
       })}
@@ -72,12 +82,12 @@ export default function PaymentRow({ payment, chargeTypes, onToggle, onDeleted, 
       <td style={styles.td}>
         <div style={{ display: 'flex', gap: 6 }}>
           {!fullyPaid && (
-            <button onClick={() => onToggle(payment._id, 'all')} style={{ ...styles.btn, background: 'var(--success-dark)' }}>
+            <button onClick={() => handleToggle(payment._id, 'all')} style={{ ...styles.btn, background: 'var(--success-dark)' }}>
               Marcar pago
             </button>
           )}
           {isAdmin && fullyPaid && (
-            <button onClick={() => onToggle(payment._id, 'all')} style={{ ...styles.btn, background: '#2a2a2a', border: '1px solid #3a3a3a' }}>
+            <button onClick={() => handleToggle(payment._id, 'all')} style={{ ...styles.btn, background: '#2a2a2a', border: '1px solid #3a3a3a' }}>
               Desfazer
             </button>
           )}
@@ -118,6 +128,14 @@ function CheckBtn({ checked, onClick }) {
 export function PaymentCard({ payment, chargeTypes, onToggle, onDeleted, isAdmin }) {
   const { userId, fullyPaid, amount, amountPaid, isDriver, charges } = payment;
   const [sending, setSending] = useState(false);
+
+  const handleToggle = (id, field) => {
+    const isUndo = field === 'all'
+      ? fullyPaid
+      : charges.find(c => c.chargeTypeId === field || c.chargeTypeId?.toString() === field)?.paid ?? false;
+    if (isUndo && !isAdmin) { toast(MSG_GESTAO, { icon: 'ℹ️' }); return; }
+    onToggle(id, field);
+  };
 
   const handleCharge = async () => {
     setSending(true);
@@ -168,7 +186,7 @@ export function PaymentCard({ payment, chargeTypes, onToggle, onDeleted, isAdmin
           if (!charge) return null;
           return (
             <div key={ct._id} style={card.checkItem}>
-              <CheckBtn checked={charge.paid} onClick={() => onToggle(payment._id, charge.chargeTypeId)} />
+              <CheckBtn checked={charge.paid} onClick={() => handleToggle(payment._id, charge.chargeTypeId)} />
               <div>
                 <div style={card.checkLabel}>{ct.name}</div>
                 <div style={card.checkValue}>{fmt(charge.value)}</div>
@@ -181,12 +199,12 @@ export function PaymentCard({ payment, chargeTypes, onToggle, onDeleted, isAdmin
       {/* Ações */}
       <div style={card.actions}>
         {!fullyPaid && (
-          <button onClick={() => onToggle(payment._id, 'all')} style={{ ...styles.btn, background: 'var(--success-dark)', flex: 1 }}>
+          <button onClick={() => handleToggle(payment._id, 'all')} style={{ ...styles.btn, background: 'var(--success-dark)', flex: 1 }}>
             Marcar tudo pago
           </button>
         )}
         {isAdmin && fullyPaid && (
-          <button onClick={() => onToggle(payment._id, 'all')} style={{ ...styles.btn, background: '#2a2a2a', border: '1px solid #3a3a3a', flex: 1 }}>
+          <button onClick={() => handleToggle(payment._id, 'all')} style={{ ...styles.btn, background: '#2a2a2a', border: '1px solid #3a3a3a', flex: 1 }}>
             Desfazer
           </button>
         )}
