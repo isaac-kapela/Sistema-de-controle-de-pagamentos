@@ -178,4 +178,4 @@ const generatePayments = async (req, res) => {
   }
 };
 
-module.exports = { listPayments, togglePayment, generatePayments };
+module.exports = { listPayments, togglePayment, generatePayments, ensurePaymentsExist };

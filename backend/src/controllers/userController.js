@@ -1,8 +1,5 @@
 const User = require('../models/User');
-const Payment = require('../models/Payment');
-
-const GASOLINA = 5.0;
-const DRIVE = 2.27;
+const { ensurePaymentsExist } = require('./paymentController');
 
 // Listar todos os usuários ativos
 const listUsers = async (req, res) => {
@@ -31,21 +28,17 @@ const createUser = async (req, res) => {
         { name, email, isDriver: !!isDriver, active: true },
         { new: true }
       );
+      // Redistribui rateio com o usuário reativado
+      const now = new Date();
+      await ensurePaymentsExist(now.getMonth() + 1, now.getFullYear());
       return res.status(200).json(user);
     }
 
     const user = await User.create({ name, email, isDriver: !!isDriver });
 
-    // Gera pagamento para o mês corrente automaticamente
+    // Cria pagamento do mês atual e redistribui rateio entre todos
     const now = new Date();
-    const amount = isDriver ? DRIVE : GASOLINA + DRIVE;
-    await Payment.create({
-      userId: user._id,
-      month: now.getMonth() + 1,
-      year: now.getFullYear(),
-      isDriver: !!isDriver,
-      amount,
-    });
+    await ensurePaymentsExist(now.getMonth() + 1, now.getFullYear());
 
     res.status(201).json(user);
   } catch (err) {
@@ -85,6 +78,11 @@ const deleteUser = async (req, res) => {
       { new: true }
     );
     if (!user) return res.status(404).json({ error: 'Usuário não encontrado.' });
+
+    // Redistribui rateio entre os usuários que ficaram
+    const now = new Date();
+    await ensurePaymentsExist(now.getMonth() + 1, now.getFullYear());
+
     res.json({ message: 'Usuário removido.' });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao remover usuário.' });
