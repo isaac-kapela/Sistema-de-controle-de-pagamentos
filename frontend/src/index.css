@@ -145,6 +145,16 @@ input, select {
   }
 }
 
+/* ── Tablet: troca tabela de pagamentos por cards ── */
+@media (max-width: 768px) {
+  .payment-table-desktop {
+    display: none;
+  }
+  .payment-cards-mobile {
+    display: block;
+  }
+}
+
 /* ── Mobile ─────────────────────────── */
 @media (max-width: 640px) {
   .app-header {

@@ -117,7 +117,6 @@ function CheckBtn({ checked, onClick }) {
 
 export function PaymentCard({ payment, chargeTypes, onToggle, onDeleted, isAdmin }) {
   const { userId, fullyPaid, amount, amountPaid, isDriver, charges } = payment;
-  const statusColor = fullyPaid ? 'var(--success)' : 'var(--danger)';
   const [sending, setSending] = useState(false);
 
   const handleCharge = async () => {
@@ -145,6 +144,7 @@ export function PaymentCard({ payment, chargeTypes, onToggle, onDeleted, isAdmin
 
   return (
     <div style={card.wrap}>
+      {/* Cabeçalho: nome + status */}
       <div style={card.top}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={styles.name}>{userId?.name || '—'}</div>
@@ -154,62 +154,68 @@ export function PaymentCard({ payment, chargeTypes, onToggle, onDeleted, isAdmin
           <span style={{ ...styles.badge, background: isDriver ? '#1a0000' : '#1f1f1f', border: `1px solid ${isDriver ? '#a80303' : '#3a3a3a'}`, color: isDriver ? '#a80303' : 'var(--text-muted)' }}>
             {isDriver ? 'Motorista' : 'Normal'}
           </span>
-          <span style={{ color: statusColor, fontWeight: 700, fontSize: 13 }}>
-            {fullyPaid ? 'Pago' : `Falta ${fmt(amount - amountPaid)}`}
-          </span>
+          {fullyPaid
+            ? <span style={card.statusPago}>✓ Pago</span>
+            : <span style={card.statusFalta}>Falta {fmt(amount - amountPaid)}</span>
+          }
         </div>
       </div>
 
-      {/* Cobranças dinâmicas */}
+      {/* Cobranças: grid com nome, valor e checkbox */}
       <div style={card.checks}>
         {chargeTypes.map((ct) => {
           const charge = charges?.find(c => c.chargeTypeId === ct._id || c.chargeTypeId?.toString() === ct._id);
           if (!charge) return null;
           return (
             <div key={ct._id} style={card.checkItem}>
-              <span style={card.checkLabel}>{ct.name}</span>
               <CheckBtn checked={charge.paid} onClick={() => onToggle(payment._id, charge.chargeTypeId)} />
+              <div>
+                <div style={card.checkLabel}>{ct.name}</div>
+                <div style={card.checkValue}>{fmt(charge.value)}</div>
+              </div>
             </div>
           );
         })}
       </div>
 
-      {(true) && (
-        <div style={card.actions}>
-          {!fullyPaid && (
-            <button onClick={() => onToggle(payment._id, 'all')} style={{ ...styles.btn, background: 'var(--success-dark)', flex: 1 }}>
-              Marcar pago
-            </button>
-          )}
-          {isAdmin && fullyPaid && (
-            <button onClick={() => onToggle(payment._id, 'all')} style={{ ...styles.btn, background: '#2a2a2a', border: '1px solid #3a3a3a', flex: 1 }}>
-              Desfazer
-            </button>
-          )}
-          {isAdmin && !fullyPaid && (
-            <button onClick={handleCharge} disabled={sending} style={{ ...styles.btn, background: 'transparent', border: '1px solid #2e2e2e', color: 'var(--text-muted)', padding: '6px 12px', opacity: sending ? 0.5 : 1 }} title="Enviar cobrança por email">
-              ✉
-            </button>
-          )}
-          {isAdmin && (
-            <button onClick={handleDelete} style={{ ...styles.btn, background: 'transparent', border: '1px solid #3a3a3a', color: 'var(--danger)', padding: '6px 12px' }} title="Remover membro">
-              ✕
-            </button>
-          )}
-        </div>
-      )}
+      {/* Ações */}
+      <div style={card.actions}>
+        {!fullyPaid && (
+          <button onClick={() => onToggle(payment._id, 'all')} style={{ ...styles.btn, background: 'var(--success-dark)', flex: 1 }}>
+            Marcar tudo pago
+          </button>
+        )}
+        {isAdmin && fullyPaid && (
+          <button onClick={() => onToggle(payment._id, 'all')} style={{ ...styles.btn, background: '#2a2a2a', border: '1px solid #3a3a3a', flex: 1 }}>
+            Desfazer
+          </button>
+        )}
+        {isAdmin && !fullyPaid && (
+          <button onClick={handleCharge} disabled={sending} style={{ ...styles.btn, background: 'transparent', border: '1px solid #2e2e2e', color: 'var(--text-muted)', padding: '8px 14px', opacity: sending ? 0.5 : 1 }} title="Enviar cobrança por email">
+            ✉
+          </button>
+        )}
+        {isAdmin && (
+          <button onClick={handleDelete} style={{ ...styles.btn, background: 'transparent', border: '1px solid #3a3a3a', color: 'var(--danger)', padding: '8px 14px' }} title="Remover membro">
+            ✕
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
 const card = {
-  wrap: { padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--bg-card)' },
-  top: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
-  topRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 },
-  checks: { display: 'flex', gap: 20, paddingTop: 8, borderTop: '1px solid var(--border)', flexWrap: 'wrap' },
-  checkItem: { display: 'flex', alignItems: 'center', gap: 8 },
-  checkLabel: { fontSize: 12, color: 'var(--text-muted)' },
-  actions: { display: 'flex', gap: 6 },
+  wrap: { padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12, background: 'var(--bg-card)' },
+  top: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
+  topRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 },
+  statusPago: { color: 'var(--success)', fontWeight: 700, fontSize: 13 },
+  statusFalta: { color: 'var(--danger)', fontWeight: 700, fontSize: 13 },
+  checks: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: '10px 16px', paddingTop: 10, borderTop: '1px solid var(--border)' },
+  checkItem: { display: 'flex', alignItems: 'center', gap: 10 },
+  checkLabel: { fontSize: 12, fontWeight: 600, color: 'var(--text)', lineHeight: 1.2 },
+  checkValue: { fontSize: 11, color: 'var(--text-muted)', marginTop: 1 },
+  actions: { display: 'flex', gap: 8, paddingTop: 4 },
 };
 
 const styles = {
