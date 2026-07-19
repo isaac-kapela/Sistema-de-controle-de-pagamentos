@@ -12,7 +12,6 @@ const meetingSchema = new mongoose.Schema({
   notes: { type: String, trim: true, default: '' },
 }, { timestamps: true });
 
-// Evitar duplicatas: uma única reunião por semestre+data
-meetingSchema.index({ semesterId: 1, date: 1 }, { unique: true });
+meetingSchema.index({ semesterId: 1, date: 1 });
 
 module.exports = mongoose.model('Meeting', meetingSchema);
