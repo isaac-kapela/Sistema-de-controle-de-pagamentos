@@ -56,10 +56,7 @@ export default function PaymentRow({ payment, chargeTypes, onToggle, onDeleted, 
         if (!charge) return <td key={ct._id} style={styles.td}><span style={styles.na}>—</span></td>;
         return (
           <td key={ct._id} style={styles.td}>
-            {isAdmin
-              ? <CheckBtn checked={charge.paid} onClick={() => onToggle(payment._id, charge.chargeTypeId)} />
-              : <StatusDot checked={charge.paid} />
-            }
+            <CheckBtn checked={charge.paid} onClick={() => onToggle(payment._id, charge.chargeTypeId)} />
           </td>
         );
       })}
@@ -171,16 +168,13 @@ export function PaymentCard({ payment, chargeTypes, onToggle, onDeleted, isAdmin
           return (
             <div key={ct._id} style={card.checkItem}>
               <span style={card.checkLabel}>{ct.name}</span>
-              {isAdmin
-                ? <CheckBtn checked={charge.paid} onClick={() => onToggle(payment._id, charge.chargeTypeId)} />
-                : <StatusDot checked={charge.paid} />
-              }
+              <CheckBtn checked={charge.paid} onClick={() => onToggle(payment._id, charge.chargeTypeId)} />
             </div>
           );
         })}
       </div>
 
-      {(!fullyPaid || isAdmin) && (
+      {(true) && (
         <div style={card.actions}>
           {!fullyPaid && (
             <button onClick={() => onToggle(payment._id, 'all')} style={{ ...styles.btn, background: 'var(--success-dark)', flex: 1 }}>
