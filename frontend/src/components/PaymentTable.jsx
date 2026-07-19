@@ -43,11 +43,22 @@ export default function PaymentTable({ payments, chargeTypes, onToggle, onDelete
               <th style={styles.th}>Membro</th>
               <th style={styles.th}>Tipo</th>
               <th style={styles.th}>Valor</th>
-              {chargeTypes.map((ct) => (
-                <th key={ct._id} style={styles.th}>
-                  {ct.name} ({fmt(ct.value)})
-                </th>
-              ))}
+              {chargeTypes.map((ct) => {
+                // Para cobranças rateadas, pega o valor por pessoa do primeiro pagamento que a tem
+                const perPerson = ct.splitAmongUsers
+                  ? payments.find(p => p.charges?.find(c => c.chargeTypeId?.toString() === ct._id || c.chargeTypeId === ct._id))
+                      ?.charges?.find(c => c.chargeTypeId?.toString() === ct._id || c.chargeTypeId === ct._id)?.value ?? ct.value
+                  : ct.value;
+                return (
+                  <th key={ct._id} style={styles.th}>
+                    <div>{ct.name}</div>
+                    <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: 11 }}>{fmt(perPerson)}/pessoa</div>
+                    {ct.splitAmongUsers && (
+                      <div style={{ fontWeight: 400, color: 'var(--text-muted)', fontSize: 10 }}>total {fmt(ct.value)}</div>
+                    )}
+                  </th>
+                );
+              })}
               <th style={styles.th}>Status</th>
               <th style={styles.th}></th>
             </tr>
