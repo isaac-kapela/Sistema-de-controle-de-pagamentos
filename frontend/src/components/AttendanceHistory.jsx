@@ -126,7 +126,7 @@ export default function AttendanceHistory() {
               <div key={meeting._id} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--bg-card)', borderRadius: 10, padding: '12px 16px', border: '1px solid var(--border)' }}>
                 <div style={{ flex: 1 }}>
                   <span style={{ fontWeight: 600, fontSize: 14 }}>
-                    {new Date(meeting.date).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                    {new Date(meeting.date).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' })}
                   </span>
                   <span style={{ marginLeft: 10, color: 'var(--text-muted)', fontSize: 13 }}>{meeting.startTime}</span>
                 </div>
@@ -159,7 +159,7 @@ export default function AttendanceHistory() {
                 >
                   <div style={{ flex: 1 }}>
                     <span style={{ fontWeight: 600, fontSize: 15 }}>
-                      {new Date(m.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                      {new Date(m.date).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' })}
                     </span>
                     <span style={{ marginLeft: 10, color: 'var(--text-muted)', fontSize: 13 }}>{m.startTime}</span>
                   </div>

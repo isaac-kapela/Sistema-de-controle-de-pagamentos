@@ -93,7 +93,7 @@ export default function AttendanceTable({ meeting, isAdmin }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h3 style={{ margin: '0 0 6px', fontSize: 17 }}>
-              {meetingDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+              {meetingDate.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric', timeZone: 'UTC' })}
             </h3>
             <p style={{ margin: 0, color: 'var(--text-muted)', fontSize: 14 }}>Horário: {meeting.startTime}</p>
           </div>
