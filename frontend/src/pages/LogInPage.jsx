@@ -187,18 +187,6 @@ function CredentialCard({ item, onEdit, onDelete }) {
 
 // ── Página principal ──────────────────────────────────────────
 export default function LogInPage() {
-  const { isAdmin } = useAuth();
-
-  if (!isAdmin) {
-    return (
-      <div style={s.restricted}>
-        <div style={s.restrictedIcon}>🔒</div>
-        <h2 style={s.restrictedTitle}>Área restrita</h2>
-        <p style={s.restrictedSub}>Esta aba é exclusiva para administradores.</p>
-      </div>
-    );
-  }
-
   return <AdminLogInView />;
 }
 
