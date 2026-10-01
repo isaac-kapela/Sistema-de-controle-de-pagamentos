@@ -4,6 +4,17 @@
   "private": true,
   "scripts": {
     "build": "npm run build --prefix frontend",
-    "postinstall": "npm install --prefix backend && npm install --prefix frontend"
+    "postinstall": "npm install --prefix frontend"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.18.3",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.2.3",
+    "multer": "^2.1.1",
+    "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.5",
+    "pdf-parse": "^1.1.1"
   }
 }

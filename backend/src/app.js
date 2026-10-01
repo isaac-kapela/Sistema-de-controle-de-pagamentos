@@ -39,6 +39,12 @@ async function connectDB() {
   return connectionPromise;
 }
 
+// Health check (sem bloqueio de DB)
+app.get('/api/health', (_, res) => res.json({
+  status: 'ok',
+  mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'connecting',
+}));
+
 // Garante conexão com MongoDB antes de cada request
 app.use(async (req, res, next) => {
   try {
@@ -65,9 +71,6 @@ app.use('/api/stock',      require('./routes/stock'));
 app.use('/api/feedbacks',  require('./routes/feedbacks'));
 app.use('/api/logins',       require('./routes/platformCredentials'));
 app.use('/api/charge-types', require('./routes/chargeTypes'));
-
-// Health check
-app.get('/api/health', (_, res) => res.json({ status: 'ok' }));
 
 // Inicia cron de aniversarios
 startBirthdayCron();
