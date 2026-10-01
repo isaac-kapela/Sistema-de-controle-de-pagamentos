@@ -44,10 +44,20 @@ export default function PaymentTable({ payments, chargeTypes, onToggle, onDelete
               <th style={styles.th}>Tipo</th>
               <th style={styles.th}>Valor</th>
               {chargeTypes.map((ct) => {
-                // Para cobranças rateadas, pega o valor por pessoa do primeiro pagamento que a tem
+                const countAll = payments.length;
+                const countDrivers = payments.filter(p => p.isDriver).length;
+                const countNonDrivers = payments.filter(p => !p.isDriver).length;
+                const n = ct.applicableTo === 'drivers' ? countDrivers
+                        : ct.applicableTo === 'non-drivers' ? countNonDrivers
+                        : countAll;
+                const fallbackPerPerson = ct.splitAmongUsers && n > 0
+                  ? Math.round((ct.value / n) * 100) / 100
+                  : ct.value;
+
+                // Para cobranças rateadas, pega o valor por pessoa do primeiro pagamento que a tem ou calcula diretamente
                 const perPerson = ct.splitAmongUsers
-                  ? payments.find(p => p.charges?.find(c => c.chargeTypeId?.toString() === ct._id || c.chargeTypeId === ct._id))
-                      ?.charges?.find(c => c.chargeTypeId?.toString() === ct._id || c.chargeTypeId === ct._id)?.value ?? ct.value
+                  ? (payments.find(p => p.charges?.find(c => (c.chargeTypeId?._id || c.chargeTypeId)?.toString() === ct._id?.toString()))
+                      ?.charges?.find(c => (c.chargeTypeId?._id || c.chargeTypeId)?.toString() === ct._id?.toString())?.value ?? fallbackPerPerson)
                   : ct.value;
                 return (
                   <th key={ct._id} style={styles.th}>

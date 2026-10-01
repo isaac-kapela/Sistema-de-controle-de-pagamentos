@@ -12,8 +12,8 @@ const listChargeTypes = async (req, res) => {
 
 const createChargeType = async (req, res) => {
   try {
-    const { name, value, applicableTo, active } = req.body;
-    const ct = new ChargeType({ name, value, applicableTo, active });
+    const { name, value, applicableTo, active, splitAmongUsers } = req.body;
+    const ct = new ChargeType({ name, value, applicableTo, active, splitAmongUsers });
     await ct.save();
     res.status(201).json(ct);
   } catch (err) {

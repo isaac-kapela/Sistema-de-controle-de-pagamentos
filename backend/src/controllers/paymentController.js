@@ -42,8 +42,8 @@ const ensurePaymentsExist = async (month, year) => {
   ]);
 
   // Só aplica cobranças criadas até o último dia do mês em questão
-  const monthEnd = new Date(year, month, 0, 23, 59, 59, 999);
-  const validForMonth = chargeTypes.filter(ct => new Date(ct.createdAt) <= monthEnd);
+  const monthEnd = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+  const validForMonth = chargeTypes.filter(ct => !ct.createdAt || new Date(ct.createdAt) <= monthEnd);
 
   // Pré-calcula quantos usuários cada cobrança rateada tem
   const countAll = users.length;
@@ -99,7 +99,7 @@ const ensurePaymentsExist = async (month, year) => {
 
     // Adiciona cobranças novas + atualiza valor de cobranças rateadas não pagas
     if (existing && existing.charges.length > 0) {
-      const existingIds = existing.charges.map(c => c.chargeTypeId.toString());
+      const existingIds = existing.charges.map(c => c.chargeTypeId ? c.chargeTypeId.toString() : '');
       const missing = applicableCharges.filter(c => !existingIds.includes(c.chargeTypeId.toString()));
       if (missing.length > 0) {
         await Payment.updateOne({ _id: existing._id }, { $push: { charges: { $each: missing } } });
@@ -107,7 +107,7 @@ const ensurePaymentsExist = async (month, year) => {
 
       // Recalcula valor das cobranças rateadas não pagas (nº de usuários pode ter mudado)
       for (const charge of existing.charges) {
-        const ct = validForMonth.find(t => t._id.toString() === charge.chargeTypeId.toString());
+        const ct = validForMonth.find(t => t._id.toString() === charge.chargeTypeId?.toString());
         if (ct?.splitAmongUsers && !charge.paid) {
           const newValue = perUserValue(ct);
           if (charge.value !== newValue) {
