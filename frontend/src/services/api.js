@@ -2,7 +2,14 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
-  timeout: 10000,
+  timeout: 15000,
+});
+
+api.interceptors.response.use((response) => {
+  if (typeof response.data === 'string' && response.data.trim().toLowerCase().startsWith('<!doctype html')) {
+    return Promise.reject(new Error('Resposta inválida do servidor (HTML em vez de JSON)'));
+  }
+  return response;
 });
 
 // ─── Usuários ────────────────────────────────────────────────
