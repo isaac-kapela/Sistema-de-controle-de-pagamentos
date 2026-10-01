@@ -11,6 +11,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Normaliza URLs caso cheguem com prefixo /_/backend
+app.use((req, res, next) => {
+  if (req.url.startsWith('/_/backend')) {
+    req.url = req.url.replace('/_/backend', '');
+  }
+  next();
+});
+
 // Conexão com MongoDB com cache (funciona em ambiente serverless)
 // Armazena a Promise para evitar múltiplas conexões paralelas
 let connectionPromise = null;
