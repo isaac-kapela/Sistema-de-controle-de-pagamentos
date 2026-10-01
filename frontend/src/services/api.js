@@ -62,6 +62,8 @@ export const getSchedules = (semestre = '') =>
 
 export const createSchedule = (data) => api.post('/schedules', data).then((r) => r.data);
 
+export const updateSchedule = (id, data) => api.put(`/schedules/${id}`, data).then((r) => r.data);
+
 export const deleteSchedule = (id) => api.delete(`/schedules/${id}`).then((r) => r.data);
 
 export const clearAllSchedules = () => api.delete('/schedules').then((r) => r.data);

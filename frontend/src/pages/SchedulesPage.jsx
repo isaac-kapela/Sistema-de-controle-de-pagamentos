@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { parsePDF, getSchedules, createSchedule, deleteSchedule, clearAllSchedules } from '../services/api';
+import { parsePDF, getSchedules, createSchedule, updateSchedule, deleteSchedule, clearAllSchedules } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ScheduleGrid from '../components/ScheduleGrid';
 import toast from 'react-hot-toast';
@@ -38,7 +38,8 @@ export default function SchedulesPage() {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading]     = useState(true);
 
-  // ── Meu Horário ──────────────────────────────────────────────
+  // ── Meu Horário / Edição ─────────────────────────────────────
+  const [editingId, setEditingId]     = useState(null);
   const [uploading, setUploading]     = useState(false);
   const [parsed, setParsed]           = useState(null);
   const [editNome, setEditNome]       = useState('');
@@ -144,6 +145,19 @@ export default function SchedulesPage() {
     );
   }
 
+  function handleStartEdit(sc) {
+    setEditingId(sc._id);
+    setEditNome(sc.nome);
+    setEditSemestre(sc.semestre || '');
+    setEditArea(sc.area || '');
+    setEditCapitao(Boolean(sc.capitao));
+    setEditLider(Boolean(sc.lider));
+    setEditSlots(sc.slots ? [...sc.slots] : []);
+    setParsed({ nome: sc.nome, semestre: sc.semestre, slots: sc.slots });
+    setTab('meu');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   async function handleSave() {
     if (!editNome.trim())       { toast.error('Informe seu nome'); return; }
     if (!editSemestre.trim())   { toast.error('Informe o semestre (ex: 2026.1)'); return; }
@@ -151,20 +165,25 @@ export default function SchedulesPage() {
     if (editSlots.length === 0) { toast.error('Nenhum horário marcado'); return; }
     setSaving(true);
     try {
-      await createSchedule({
+      const payload = {
         nome: editNome.trim(),
         semestre: editSemestre.trim(),
         area: editArea,
         capitao: editCapitao,
         lider: editLider,
         slots: editSlots,
-      });
-      toast.success('Horário salvo!');
-      setParsed(null);
-      setEditSlots([]);
-      if (fileRef.current) fileRef.current.value = '';
+      };
+      if (editingId) {
+        await updateSchedule(editingId, payload);
+        toast.success('Horário atualizado com sucesso!');
+      } else {
+        await createSchedule(payload);
+        toast.success('Horário salvo com sucesso!');
+      }
+      const memberName = editNome.trim();
+      handleReset();
       await loadAll();
-      setTab(`member:${editNome.trim()}`);
+      setTab(`member:${memberName}`);
     } catch {
       toast.error('Erro ao salvar horário');
     } finally {
@@ -173,8 +192,14 @@ export default function SchedulesPage() {
   }
 
   function handleReset() {
+    setEditingId(null);
     setParsed(null);
     setEditSlots([]);
+    setEditNome('');
+    setEditSemestre('');
+    setEditArea('');
+    setEditCapitao(false);
+    setEditLider(false);
     if (fileRef.current) fileRef.current.value = '';
   }
 
@@ -191,14 +216,15 @@ export default function SchedulesPage() {
   }
 
   async function handleDelete(id, nome) {
-    if (!window.confirm(`Remover horário de ${nome}?`)) return;
+    if (!window.confirm(`Tem certeza que deseja remover o horário de ${nome}?`)) return;
     try {
       await deleteSchedule(id);
-      toast.success('Horário removido');
+      toast.success('Horário removido com sucesso!');
+      if (editingId === id) handleReset();
       if (tab === `member:${nome}`) setTab('geral');
       await loadAll();
     } catch {
-      toast.error('Erro ao remover');
+      toast.error('Erro ao remover horário');
     }
   }
 
@@ -220,7 +246,9 @@ export default function SchedulesPage() {
       {/* ── Barra de abas ── */}
       <div style={s.tabBar}>
         <TabBtn id="geral"    active={tab} onClick={setTab}>Visão Geral</TabBtn>
-        <TabBtn id="meu"      active={tab} onClick={setTab}>+ Meu Horário</TabBtn>
+        <TabBtn id="meu"      active={tab} onClick={setTab}>
+          {editingId ? '✏️ Editar Horário' : '+ Meu Horário'}
+        </TabBtn>
         {schedules.length > 1 && (
           <TabBtn id="comparar" active={tab} onClick={setTab}>
             Comparar
@@ -289,6 +317,8 @@ export default function SchedulesPage() {
           isAdmin={isAdmin}
           schedules={schedules}
           onDelete={handleDelete}
+          onEdit={handleStartEdit}
+          onSelectMember={(nome) => setTab(`member:${nome}`)}
         />
       )}
 
@@ -490,8 +520,24 @@ export default function SchedulesPage() {
           ) : (
             <div style={s.previewCard}>
               <div style={s.previewHeader}>
-                <h3 style={s.previewTitle}>Grade extraída — confira e ajuste</h3>
-                <button style={s.resetBtn} onClick={handleReset}>← Enviar outro PDF</button>
+                <div>
+                  <h3 style={s.previewTitle}>
+                    {editingId ? `Editando horário de ${editNome}` : 'Grade extraída — confira e ajuste'}
+                  </h3>
+                  <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>
+                    {editingId
+                      ? 'Ajuste os dados ou clique nos blocos da grade abaixo para alterar sua disponibilidade.'
+                      : 'Verifique se os dados e os horários estão corretos.'}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button type="button" style={s.resetBtn} onClick={() => fileRef.current?.click()}>
+                    📄 {editingId ? 'Substituir via PDF' : 'Trocar PDF'}
+                  </button>
+                  <button type="button" style={{ ...s.resetBtn, color: '#ef4444' }} onClick={handleReset}>
+                    {editingId ? 'Cancelar edição' : '← Limpar'}
+                  </button>
+                </div>
               </div>
 
               {/* Nome + Semestre */}
@@ -524,7 +570,7 @@ export default function SchedulesPage() {
                 </Field>
               </div>
 
-              <p style={s.editHint}>Células azuis = aulas/compromissos. Clique para corrigir.</p>
+              <p style={s.editHint}>Células azuis = aulas/compromissos. Clique para marcar/desmarcar disponibilidade.</p>
 
               <div style={s.gridCard}>
                 <ScheduleGrid mode="individual" slots={editSlots} editable onToggle={handleToggleSlot} />
@@ -533,7 +579,7 @@ export default function SchedulesPage() {
               <div style={s.saveRow}>
                 <span style={s.slotCount}>{editSlots.length} horário{editSlots.length !== 1 ? 's' : ''} marcado{editSlots.length !== 1 ? 's' : ''}</span>
                 <button style={s.saveBtn} onClick={handleSave} disabled={saving}>
-                  {saving ? 'Salvando...' : 'Salvar meu horário'}
+                  {saving ? 'Salvando...' : editingId ? 'Salvar alterações' : 'Salvar meu horário'}
                 </button>
               </div>
             </div>
@@ -559,11 +605,14 @@ export default function SchedulesPage() {
                 <span style={s.tagSlot}>{memberSchedule.slots.length} horários ocupados</span>
               </div>
             </div>
-            {isAdmin && (
-              <button style={s.deleteBtn} onClick={() => handleDelete(memberSchedule._id, memberSchedule.nome)}>
-                Remover
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <button style={s.editBtn} onClick={() => handleStartEdit(memberSchedule)}>
+                ✏️ Editar Horário
               </button>
-            )}
+              <button style={s.deleteBtn} onClick={() => handleDelete(memberSchedule._id, memberSchedule.nome)}>
+                🗑️ Excluir Horário
+              </button>
+            </div>
           </div>
           <div style={s.gridCard}>
             <ScheduleGrid mode="individual" slots={memberSchedule.slots} />
@@ -575,7 +624,7 @@ export default function SchedulesPage() {
 }
 
 /* ── Sub-componente: AggView (usado em Visão Geral) ── */
-function AggView({ data, loading, emptyMsg, isAdmin, schedules, onDelete }) {
+function AggView({ data, loading, emptyMsg, isAdmin, schedules, onDelete, onEdit, onSelectMember }) {
   return (
     <div style={s.section}>
       <div style={s.filterRow}>
@@ -597,13 +646,17 @@ function AggView({ data, loading, emptyMsg, isAdmin, schedules, onDelete }) {
         </div>
       )}
 
-      {isAdmin && schedules.length > 0 && (
+      {schedules.length > 0 && (
         <div style={{ marginTop: 32 }}>
-          <h3 style={s.adminTitle}>Gerenciar horários</h3>
+          <h3 style={s.adminTitle}>Gerenciar / Editar horários dos membros</h3>
           <div style={s.scheduleList}>
             {schedules.map(sc => (
               <div key={sc._id} style={s.scheduleItem}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', cursor: 'pointer' }}
+                  onClick={() => onSelectMember && onSelectMember(sc.nome)}
+                  title="Clique para ver o horário individual"
+                >
                   {sc.capitao && <span style={{ color: '#f59e0b', fontSize: 13 }}>★</span>}
                   {sc.lider && !sc.capitao && <span style={{ color: '#a78bfa', fontSize: 13 }}>◆</span>}
                   <span style={s.scNome}>{sc.nome}</span>
@@ -613,7 +666,14 @@ function AggView({ data, loading, emptyMsg, isAdmin, schedules, onDelete }) {
                   {sc.lider && !sc.capitao && <span style={s.tagLid}>Líder</span>}
                   <span style={s.tagSlot}>{sc.slots.length} slots</span>
                 </div>
-                <button style={s.deleteBtn} onClick={() => onDelete(sc._id, sc.nome)}>Remover</button>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button style={s.editBtn} onClick={() => onEdit(sc)}>
+                    ✏️ Editar
+                  </button>
+                  <button style={s.deleteBtn} onClick={() => onDelete(sc._id, sc.nome)}>
+                    🗑️ Excluir
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -735,9 +795,16 @@ const s = {
   },
   scNome:   { fontSize: 14, fontWeight: 600, color: 'var(--text)' },
   deleteBtn: {
-    background: 'transparent', border: '1px solid var(--border)',
+    background: 'transparent', border: '1px solid rgba(239, 68, 68, 0.35)',
     borderRadius: 'var(--radius)', color: '#ef4444',
     fontSize: 12, padding: '5px 12px', cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', gap: 4,
+  },
+  editBtn: {
+    background: 'transparent', border: '1px solid rgba(99, 102, 241, 0.4)',
+    borderRadius: 'var(--radius)', color: 'var(--primary)',
+    fontSize: 12, padding: '5px 12px', cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', gap: 4,
   },
 
   // Comparar

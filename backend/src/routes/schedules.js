@@ -19,13 +19,13 @@ router.post('/parse-pdf', upload.single('pdf'), ctrl.parsePDF);
 // Rota pública: visão agregada (contagem por slot)
 router.get('/aggregate', ctrl.aggregateSchedules);
 
-// Rotas públicas de listagem e cadastro (qualquer membro pode cadastrar)
+// Rotas públicas de gerenciamento de horários (qualquer membro pode cadastrar, atualizar ou excluir)
 router.get('/', ctrl.listSchedules);
 router.post('/', ctrl.createSchedule);
+router.put('/:id', ctrl.updateSchedule);
+router.delete('/:id', ctrl.deleteSchedule);
 
-// Rotas restritas (admin)
-router.delete('/',    requireAuth, ctrl.clearAllSchedules);
-router.put('/:id',    requireAuth, ctrl.updateSchedule);
-router.delete('/:id', requireAuth, ctrl.deleteSchedule);
+// Rota restrita (admin) - limpar todos os horários
+router.delete('/', requireAuth, ctrl.clearAllSchedules);
 
 module.exports = router;
