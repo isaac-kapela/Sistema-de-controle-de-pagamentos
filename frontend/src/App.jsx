@@ -56,7 +56,7 @@ export default function App() {
           Feedbacks
         </NavLink>
         <NavLink to="/login" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
-          Logins
+          Logins / Links importantes
         </NavLink>
       </nav>
 

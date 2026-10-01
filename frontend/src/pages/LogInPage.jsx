@@ -259,8 +259,8 @@ function AdminLogInView() {
       {/* Header */}
       <div style={s.topBar}>
         <div>
-          <h1 style={s.pageTitle}>Logins & Senhas</h1>
-          <p style={s.pageSub}>Credenciais das plataformas e licenças utilizadas pela equipe</p>
+          <h1 style={s.pageTitle}>Logins / Links importantes</h1>
+          <p style={s.pageSub}>Credenciais, links e licenças das plataformas utilizadas pela equipe</p>
         </div>
         <button style={s.addBtn} onClick={handleNew}>+ Adicionar</button>
       </div>
