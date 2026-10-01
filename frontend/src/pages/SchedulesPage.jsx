@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { parsePDF, getSchedules, createSchedule, deleteSchedule, clearAllSchedules } from '../services/api';
+import { parsePDF, getSchedules, createSchedule, updateSchedule, deleteSchedule, clearAllSchedules } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ScheduleGrid from '../components/ScheduleGrid';
 import toast from 'react-hot-toast';
@@ -38,17 +38,20 @@ export default function SchedulesPage() {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading]     = useState(true);
 
-  // ── Meu Horário ──────────────────────────────────────────────
-  const [uploading, setUploading]     = useState(false);
-  const [parsed, setParsed]           = useState(null);
-  const [editNome, setEditNome]       = useState('');
-  const [editSemestre, setEditSemestre] = useState('');
-  const [editArea, setEditArea]       = useState('');
-  const [editCapitao, setEditCapitao] = useState(false);
-  const [editLider, setEditLider]     = useState(false);
-  const [editSlots, setEditSlots]     = useState([]);
-  const [saving, setSaving]           = useState(false);
+  // ── Meu Horário / Edição ─────────────────────────────────────
+  const [uploading, setUploading]         = useState(false);
+  const [editingUploading, setEditingUploading] = useState(false);
+  const [parsed, setParsed]               = useState(null);
+  const [editingMemberId, setEditingMemberId] = useState(null);
+  const [editNome, setEditNome]           = useState('');
+  const [editSemestre, setEditSemestre]   = useState('');
+  const [editArea, setEditArea]           = useState('');
+  const [editCapitao, setEditCapitao]     = useState(false);
+  const [editLider, setEditLider]         = useState(false);
+  const [editSlots, setEditSlots]         = useState([]);
+  const [saving, setSaving]               = useState(false);
   const fileRef = useRef();
+  const editFileRef = useRef();
 
   // ── Comparar ─────────────────────────────────────────────────
   const [compareSelected, setCompareSelected] = useState(new Set());
@@ -178,6 +181,48 @@ export default function SchedulesPage() {
     if (fileRef.current) fileRef.current.value = '';
   }
 
+  function startEditing(sc) {
+    setEditingMemberId(sc._id);
+    setEditNome(sc.nome || '');
+    setEditSemestre(sc.semestre || '');
+    setEditArea(sc.area || '');
+    setEditCapitao(Boolean(sc.capitao));
+    setEditLider(Boolean(sc.lider));
+    setEditSlots(sc.slots ? [...sc.slots] : []);
+  }
+
+  function cancelEditing() {
+    setEditingMemberId(null);
+    setEditSlots([]);
+    if (editFileRef.current) editFileRef.current.value = '';
+  }
+
+  async function handleUpdateMember() {
+    if (!editNome.trim())       { toast.error('Informe o nome'); return; }
+    if (!editSemestre.trim())   { toast.error('Informe o semestre (ex: 2026.1)'); return; }
+    if (!editArea)              { toast.error('Selecione a área'); return; }
+    if (editSlots.length === 0) { toast.error('Nenhum horário marcado'); return; }
+    setSaving(true);
+    try {
+      await updateSchedule(editingMemberId, {
+        nome: editNome.trim(),
+        semestre: editSemestre.trim(),
+        area: editArea,
+        capitao: editCapitao,
+        lider: editLider,
+        slots: editSlots,
+      });
+      toast.success('Horário atualizado com sucesso!');
+      setEditingMemberId(null);
+      await loadAll();
+      setTab(`member:${editNome.trim()}`);
+    } catch {
+      toast.error('Erro ao atualizar horário');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleClearAll() {
     if (!window.confirm('Tem certeza? Isso vai remover TODOS os horários cadastrados.')) return;
     try {
@@ -194,11 +239,12 @@ export default function SchedulesPage() {
     if (!window.confirm(`Remover horário de ${nome}?`)) return;
     try {
       await deleteSchedule(id);
-      toast.success('Horário removido');
+      toast.success('Horário removido com sucesso!');
+      if (editingMemberId === id) cancelEditing();
       if (tab === `member:${nome}`) setTab('geral');
       await loadAll();
     } catch {
-      toast.error('Erro ao remover');
+      toast.error('Erro ao remover horário');
     }
   }
 
@@ -289,6 +335,11 @@ export default function SchedulesPage() {
           isAdmin={isAdmin}
           schedules={schedules}
           onDelete={handleDelete}
+          onEdit={(sc) => {
+            startEditing(sc);
+            setTab(`member:${sc.nome}`);
+          }}
+          onSelectMember={(nome) => setTab(`member:${nome}`)}
         />
       )}
 
@@ -544,30 +595,123 @@ export default function SchedulesPage() {
       {/* ══ Aba individual de membro ══════════════════════════════ */}
       {memberSchedule && (
         <div style={s.section}>
-          <div style={s.memberHeader}>
-            <div>
-              <h3 style={s.memberName}>
-                {memberSchedule.capitao && <span style={{ color: '#f59e0b' }}>★ </span>}
-                {memberSchedule.lider && !memberSchedule.capitao && <span style={{ color: '#a78bfa' }}>◆ </span>}
-                {memberSchedule.nome}
-              </h3>
-              <div style={s.memberMeta}>
-                {memberSchedule.semestre && <span style={s.tagSem}>{memberSchedule.semestre}</span>}
-                {memberSchedule.area     && <span style={s.tagArea}>{memberSchedule.area}</span>}
-                {memberSchedule.capitao  && <span style={s.tagCap}>Capitão</span>}
-                {memberSchedule.lider && !memberSchedule.capitao && <span style={s.tagLid}>Líder</span>}
-                <span style={s.tagSlot}>{memberSchedule.slots.length} horários ocupados</span>
+          {editingMemberId === memberSchedule._id ? (
+            <div style={s.previewCard}>
+              <div style={s.previewHeader}>
+                <h3 style={s.previewTitle}>Editar horário de {memberSchedule.nome}</h3>
+                <button style={s.cancelBtn} onClick={cancelEditing}>Cancelar</button>
+              </div>
+
+              {/* Nome + Semestre */}
+              <div style={s.fieldRow}>
+                <Field label="Nome *">
+                  <input style={s.input} value={editNome} onChange={e => setEditNome(e.target.value)} placeholder="Ex: João Silva" />
+                </Field>
+                <Field label="Semestre *">
+                  <input style={s.input} value={editSemestre} onChange={e => setEditSemestre(e.target.value)} placeholder="Ex: 2026.1" />
+                </Field>
+              </div>
+
+              {/* Área */}
+              <div style={{ marginBottom: 16 }}>
+                <Field label="Área na Microraptor *">
+                  <select style={{ ...s.input, cursor: 'pointer' }} value={editArea} onChange={e => setEditArea(e.target.value)}>
+                    <option value="">Selecione a área</option>
+                    {AREAS.map(a => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                </Field>
+              </div>
+
+              {/* Capitão + Líder */}
+              <div style={{ ...s.fieldRow, marginBottom: 20 }}>
+                <Field label="É capitão?">
+                  <Toggle value={editCapitao} onChange={setEditCapitao} onLabel="Sim ★" offLabel="Não" />
+                </Field>
+                <Field label="É líder de área?">
+                  <Toggle value={editLider} onChange={setEditLider} onLabel="Sim ◆" offLabel="Não" />
+                </Field>
+              </div>
+
+              {/* Substituir por PDF */}
+              <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  style={s.secBtn}
+                  onClick={() => editFileRef.current?.click()}
+                  disabled={editingUploading}
+                >
+                  {editingUploading ? 'Processando PDF...' : '📄 Substituir grade por PDF'}
+                </button>
+                <input
+                  ref={editFileRef}
+                  type="file"
+                  accept="application/pdf"
+                  style={{ display: 'none' }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setEditingUploading(true);
+                    try {
+                      const res = await parsePDF(file);
+                      if (res.slots) setEditSlots(res.slots);
+                      if (res.semestre && !editSemestre) setEditSemestre(res.semestre);
+                      toast.success('Grade importada do PDF!');
+                    } catch {
+                      toast.error('Erro ao processar PDF.');
+                    } finally {
+                      setEditingUploading(false);
+                      if (editFileRef.current) editFileRef.current.value = '';
+                    }
+                  }}
+                />
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>ou clique diretamente nas células da tabela para ajustar:</span>
+              </div>
+
+              <div style={s.gridCard}>
+                <ScheduleGrid mode="individual" slots={editSlots} editable onToggle={handleToggleSlot} />
+              </div>
+
+              <div style={s.saveRow}>
+                <span style={s.slotCount}>{editSlots.length} horário{editSlots.length !== 1 ? 's' : ''} marcado{editSlots.length !== 1 ? 's' : ''}</span>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button style={s.cancelBtn} onClick={cancelEditing}>Cancelar</button>
+                  <button style={s.saveBtn} onClick={handleUpdateMember} disabled={saving}>
+                    {saving ? 'Salvando...' : 'Salvar alterações'}
+                  </button>
+                </div>
               </div>
             </div>
-            {isAdmin && (
-              <button style={s.deleteBtn} onClick={() => handleDelete(memberSchedule._id, memberSchedule.nome)}>
-                Remover
-              </button>
-            )}
-          </div>
-          <div style={s.gridCard}>
-            <ScheduleGrid mode="individual" slots={memberSchedule.slots} />
-          </div>
+          ) : (
+            <>
+              <div style={s.memberHeader}>
+                <div>
+                  <h3 style={s.memberName}>
+                    {memberSchedule.capitao && <span style={{ color: '#f59e0b' }}>★ </span>}
+                    {memberSchedule.lider && !memberSchedule.capitao && <span style={{ color: '#a78bfa' }}>◆ </span>}
+                    {memberSchedule.nome}
+                  </h3>
+                  <div style={s.memberMeta}>
+                    {memberSchedule.semestre && <span style={s.tagSem}>{memberSchedule.semestre}</span>}
+                    {memberSchedule.area     && <span style={s.tagArea}>{memberSchedule.area}</span>}
+                    {memberSchedule.capitao  && <span style={s.tagCap}>Capitão</span>}
+                    {memberSchedule.lider && !memberSchedule.capitao && <span style={s.tagLid}>Líder</span>}
+                    <span style={s.tagSlot}>{memberSchedule.slots.length} horários ocupados</span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button style={s.editBtn} onClick={() => startEditing(memberSchedule)}>
+                    ✏️ Editar Horário
+                  </button>
+                  <button style={s.deleteBtn} onClick={() => handleDelete(memberSchedule._id, memberSchedule.nome)}>
+                    🗑️ Excluir Horário
+                  </button>
+                </div>
+              </div>
+              <div style={s.gridCard}>
+                <ScheduleGrid mode="individual" slots={memberSchedule.slots} />
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -575,7 +719,7 @@ export default function SchedulesPage() {
 }
 
 /* ── Sub-componente: AggView (usado em Visão Geral) ── */
-function AggView({ data, loading, emptyMsg, isAdmin, schedules, onDelete }) {
+function AggView({ data, loading, emptyMsg, isAdmin, schedules, onDelete, onEdit, onSelectMember }) {
   return (
     <div style={s.section}>
       <div style={s.filterRow}>
@@ -597,13 +741,17 @@ function AggView({ data, loading, emptyMsg, isAdmin, schedules, onDelete }) {
         </div>
       )}
 
-      {isAdmin && schedules.length > 0 && (
+      {schedules.length > 0 && (
         <div style={{ marginTop: 32 }}>
-          <h3 style={s.adminTitle}>Gerenciar horários</h3>
+          <h3 style={s.adminTitle}>Gerenciar horários cadastrados</h3>
           <div style={s.scheduleList}>
             {schedules.map(sc => (
               <div key={sc._id} style={s.scheduleItem}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', cursor: 'pointer' }}
+                  onClick={() => onSelectMember && onSelectMember(sc.nome)}
+                  title="Ver grade deste membro"
+                >
                   {sc.capitao && <span style={{ color: '#f59e0b', fontSize: 13 }}>★</span>}
                   {sc.lider && !sc.capitao && <span style={{ color: '#a78bfa', fontSize: 13 }}>◆</span>}
                   <span style={s.scNome}>{sc.nome}</span>
@@ -613,7 +761,14 @@ function AggView({ data, loading, emptyMsg, isAdmin, schedules, onDelete }) {
                   {sc.lider && !sc.capitao && <span style={s.tagLid}>Líder</span>}
                   <span style={s.tagSlot}>{sc.slots.length} slots</span>
                 </div>
-                <button style={s.deleteBtn} onClick={() => onDelete(sc._id, sc.nome)}>Remover</button>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button style={s.secBtnSmall} onClick={() => onEdit(sc)}>
+                    ✏️ Editar
+                  </button>
+                  <button style={s.deleteBtn} onClick={() => onDelete(sc._id, sc.nome)}>
+                    Excluir
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -830,4 +985,29 @@ const s = {
   memberHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 20 },
   memberName:   { fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' },
   memberMeta:   { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' },
+
+  editBtn: {
+    background: 'var(--primary)', border: 'none',
+    borderRadius: 'var(--radius)', color: '#fff',
+    fontSize: 13, padding: '7px 14px', cursor: 'pointer',
+    fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6,
+  },
+  secBtn: {
+    background: 'transparent', border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)', color: 'var(--text)',
+    fontSize: 13, padding: '7px 14px', cursor: 'pointer',
+    fontWeight: 500,
+  },
+  secBtnSmall: {
+    background: 'transparent', border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)', color: 'var(--text)',
+    fontSize: 12, padding: '4px 10px', cursor: 'pointer',
+    fontWeight: 500,
+  },
+  cancelBtn: {
+    background: 'transparent', border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)', color: 'var(--text-muted)',
+    fontSize: 13, padding: '8px 16px', cursor: 'pointer',
+    fontWeight: 500,
+  },
 };
