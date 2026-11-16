@@ -136,6 +136,15 @@ export const sendChargeAll = (month, year) =>
 export const sendBirthdayToday = () =>
   api.post('/email/birthday-today').then((r) => r.data);
 
+export const getMotivationalInfo = () =>
+  api.get('/email/motivational/info').then((r) => r.data);
+
+export const sendMotivationalAll = (data = {}) =>
+  api.post('/email/motivational/send-all', data).then((r) => r.data);
+
+export const sendMotivationalTest = (data = {}) =>
+  api.post('/email/motivational/test-send', data).then((r) => r.data);
+
 // ─── Estoque ──────────────────────────────────────────────────
 export const getStockItems = (params = {}) =>
   api.get('/stock', { params }).then((r) => r.data);
@@ -227,5 +236,48 @@ export const updateLogin = (id, data) =>
 
 export const deleteLogin = (id) =>
   api.delete(`/logins/${id}`).then((r) => r.data);
+
+// ─── Fluxo de Caixa e Controle Financeiro ─────────────────────
+export const getFinancialSummary = (params = {}) =>
+  api.get('/financial/summary', { params }).then((r) => r.data);
+
+export const getFinancialMeta = () =>
+  api.get('/financial/meta').then((r) => r.data);
+
+export const adjustFinancialBalance = (data) =>
+  api.post('/financial/adjust-balance', data).then((r) => r.data);
+
+export const getFinancialMovements = (params = {}) =>
+  api.get('/financial/movements', { params }).then((r) => r.data);
+
+export const createFinancialMovement = (data) =>
+  api.post('/financial/movements', data).then((r) => r.data);
+
+export const updateFinancialMovement = (id, data) =>
+  api.put(`/financial/movements/${id}`, data).then((r) => r.data);
+
+export const cancelFinancialMovement = (id, data) =>
+  api.post(`/financial/movements/${id}/cancel`, data).then((r) => r.data);
+
+export const getPurchases = (params = {}) =>
+  api.get('/financial/purchases', { params }).then((r) => r.data);
+
+export const getPurchaseById = (id) =>
+  api.get(`/financial/purchases/${id}`).then((r) => r.data);
+
+export const createPurchase = (data) =>
+  api.post('/financial/purchases', data).then((r) => r.data);
+
+export const updatePurchase = (id, data) =>
+  api.put(`/financial/purchases/${id}`, data).then((r) => r.data);
+
+export const payFinancialPurchase = (id, data) =>
+  api.post(`/financial/purchases/${id}/pay`, data).then((r) => r.data);
+
+export const updatePurchaseDelivery = (id, data) =>
+  api.patch(`/financial/purchases/${id}/delivery`, data).then((r) => r.data);
+
+export const cancelPurchase = (id, data) =>
+  api.post(`/financial/purchases/${id}/cancel`, data).then((r) => r.data);
 
 export default api;

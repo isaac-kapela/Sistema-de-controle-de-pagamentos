@@ -3,6 +3,7 @@ import { Routes, Route, NavLink } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import LoginModal from './components/LoginModal';
 import PaymentsPage from './pages/PaymentsPage';
+import CashFlowPage from './pages/CashFlowPage';
 import MembersPage from './pages/MembersPage';
 import SchedulesPage from './pages/SchedulesPage';
 import AttendancePage from './pages/AttendancePage';
@@ -37,6 +38,9 @@ export default function App() {
         <NavLink to="/" end style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
           Pagamentos
         </NavLink>
+        <NavLink to="/fluxo-caixa" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
+          Fluxo de Caixa
+        </NavLink>
         <NavLink to="/membros" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
           Membros
         </NavLink>
@@ -64,6 +68,7 @@ export default function App() {
       <main className="app-main">
         <Routes>
           <Route path="/" element={<PaymentsPage />} />
+          <Route path="/fluxo-caixa" element={<CashFlowPage />} />
           <Route path="/membros" element={<MembersPage />} />
           <Route path="/horarios" element={<SchedulesPage />} />
           <Route path="/presenca" element={<AttendancePage />} />

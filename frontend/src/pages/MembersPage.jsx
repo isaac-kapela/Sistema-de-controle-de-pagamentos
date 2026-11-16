@@ -4,6 +4,7 @@ import MembersLanding from '../components/MembersLanding';
 import MemberList, { MemberDetail } from '../components/MemberList';
 import MemberForm from '../components/MemberForm';
 import MemberTree from '../components/MemberTree';
+import MotivationalEmailModal from '../components/MotivationalEmailModal';
 import { sendBirthdayToday } from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -11,6 +12,7 @@ export default function MembersPage() {
   const { isAdmin } = useAuth();
   const [view, setView] = useState('landing');
   const [showForm, setShowForm] = useState(false);
+  const [showMotivationalModal, setShowMotivationalModal] = useState(false);
   const [editMember, setEditMember] = useState(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [viewMember, setViewMember] = useState(null);
@@ -54,15 +56,20 @@ export default function MembersPage() {
             >
               {view === 'lista' ? 'Ver arvore' : 'Ver lista'}
             </button>
-            {isAdmin && (
-              <button
-                onClick={handleBirthdayToday}
-                disabled={sendingBirthday}
-                style={{ ...s.btnOutline, opacity: sendingBirthday ? 0.6 : 1 }}
-              >
-                {sendingBirthday ? 'Enviando...' : 'Parabens do dia'}
-              </button>
-            )}
+            <button
+              onClick={() => setShowMotivationalModal(true)}
+              style={s.btnOutline}
+              title="Mensagens motivacionais a cada 7 dias para membros ativos"
+            >
+              Mensagens Motivacionais
+            </button>
+            <button
+              onClick={handleBirthdayToday}
+              disabled={sendingBirthday}
+              style={{ ...s.btnOutline, opacity: sendingBirthday ? 0.6 : 1 }}
+            >
+              {sendingBirthday ? 'Enviando...' : 'Parabens do dia'}
+            </button>
             <button onClick={openCreate} style={s.btnPrimary}>
               + Me cadastrar na equipe
             </button>
@@ -77,6 +84,7 @@ export default function MembersPage() {
           isAdmin={isAdmin}
           onVerLista={() => setView('lista')}
           onVerArvore={() => setView('arvore')}
+          onVerMotivacional={() => setShowMotivationalModal(true)}
         />
       )}
 
@@ -110,6 +118,13 @@ export default function MembersPage() {
           onClose={() => setViewMember(null)}
           onEdit={() => { openEdit(viewMember); setViewMember(null); }}
           onDeactivate={() => setViewMember(null)}
+        />
+      )}
+
+      {/* Modal de Mensagens Motivacionais Semanais */}
+      {showMotivationalModal && (
+        <MotivationalEmailModal
+          onClose={() => setShowMotivationalModal(false)}
         />
       )}
     </>

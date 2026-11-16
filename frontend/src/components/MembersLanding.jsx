@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function MembersLanding({ onCadastrar, isAdmin, onVerLista, onVerArvore }) {
+export default function MembersLanding({ onCadastrar, isAdmin, onVerLista, onVerArvore, onVerMotivacional }) {
   return (
     <div style={s.page}>
 
@@ -26,6 +26,9 @@ export default function MembersLanding({ onCadastrar, isAdmin, onVerLista, onVer
             </button>
             <button style={s.btnSecondary} onClick={onVerLista}>
               Ver lista de membros
+            </button>
+            <button style={s.btnSecondary} onClick={onVerMotivacional}>
+              Mensagens Motivacionais
             </button>
           </div>
         </div>
