@@ -73,6 +73,7 @@ app.use('/api/feedbacks',  require('./routes/feedbacks'));
 app.use('/api/logins',       require('./routes/platformCredentials'));
 app.use('/api/charge-types', require('./routes/chargeTypes'));
 app.use('/api/financial',    require('./routes/financial'));
+app.use('/api/contacts',     require('./routes/importantContacts'));
 
 // Inicia cron de aniversarios e motivacional semanal (a cada 7 dias)
 startBirthdayCron();

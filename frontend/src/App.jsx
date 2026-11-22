@@ -11,6 +11,7 @@ import CantinaPage from './pages/CantinaPage';
 import EstoquePage from './pages/EstoquePage';
 import FeedbacksPage from './pages/FeedbacksPage';
 import LogInPage from './pages/LogInPage';
+import ImportantContactsPage from './pages/ImportantContactsPage';
 
 export default function App() {
   const { isAdmin, logout } = useAuth();
@@ -41,6 +42,9 @@ export default function App() {
         <NavLink to="/fluxo-caixa" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
           Fluxo de Caixa
         </NavLink>
+        <NavLink to="/contatos" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
+          Contatos Importantes
+        </NavLink>
         <NavLink to="/membros" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
           Membros
         </NavLink>
@@ -69,6 +73,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<PaymentsPage />} />
           <Route path="/fluxo-caixa" element={<CashFlowPage />} />
+          <Route path="/contatos" element={<ImportantContactsPage />} />
           <Route path="/membros" element={<MembersPage />} />
           <Route path="/horarios" element={<SchedulesPage />} />
           <Route path="/presenca" element={<AttendancePage />} />

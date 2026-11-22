@@ -280,4 +280,17 @@ export const updatePurchaseDelivery = (id, data) =>
 export const cancelPurchase = (id, data) =>
   api.post(`/financial/purchases/${id}/cancel`, data).then((r) => r.data);
 
+// ─── Contatos Importantes ─────────────────────────────────────
+export const getImportantContacts = (params = {}) =>
+  api.get('/contacts', { params }).then((r) => r.data);
+
+export const createImportantContact = (data) =>
+  api.post('/contacts', data).then((r) => r.data);
+
+export const updateImportantContact = (id, data) =>
+  api.put(`/contacts/${id}`, data).then((r) => r.data);
+
+export const deleteImportantContact = (id) =>
+  api.delete(`/contacts/${id}`).then((r) => r.data);
+
 export default api;
