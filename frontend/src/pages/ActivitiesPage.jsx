@@ -103,7 +103,7 @@ function MiniCalendar({ currentYear, currentMonth, selectedDate, onSelectDate })
 }
 
 // ── Modal de Detalhes / Visualização do Evento ────────────────
-function EventDetailsModal({ event, onClose, onEdit, onDelete, onToggleComplete, onSendTest }) {
+function EventDetailsModal({ event, onClose, onEdit, onDelete, onToggleComplete, onOpenReminderModal }) {
   if (!event) return null;
   const catColor = getCategoryColor(event.categoria);
   const prio = PRIORITIES.find((p) => p.value === event.prioridade) || PRIORITIES[1];
@@ -208,8 +208,8 @@ function EventDetailsModal({ event, onClose, onEdit, onDelete, onToggleComplete,
             <button style={s.actionBtnSecondary} onClick={() => onToggleComplete(event)}>
               {event.concluida ? 'Reabrir Atividade' : 'Marcar como Concluída'}
             </button>
-            <button style={s.actionBtnEmail} onClick={() => onSendTest(event)}>
-              Disparar E-mail
+            <button style={s.actionBtnEmail} onClick={() => onOpenReminderModal(event)}>
+              Disparar Lembrete
             </button>
             <button style={s.actionBtnSecondary} onClick={() => onEdit(event)}>
               Editar
@@ -219,6 +219,179 @@ function EventDetailsModal({ event, onClose, onEdit, onDelete, onToggleComplete,
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal de Disparo Manual de E-mail / Lembrete ─────────────
+function ManualReminderModal({ activities = [], preselectedEvent = null, onClose, onSent }) {
+  const openActivities = useMemo(() => {
+    return activities.filter((a) => !a.concluida);
+  }, [activities]);
+
+  const [selectedId, setSelectedId] = useState(
+    preselectedEvent?._id || openActivities[0]?._id || ''
+  );
+  const [recipientMode, setRecipientMode] = useState('teste'); // 'teste' ou 'todos'
+  const [customEmail, setCustomEmail] = useState('dizolele.isaac@estudante.ufjf.br');
+  const [sending, setSending] = useState(false);
+
+  const selectedEvent = useMemo(() => {
+    return (
+      activities.find((a) => a._id === selectedId) ||
+      preselectedEvent ||
+      openActivities[0]
+    );
+  }, [activities, selectedId, preselectedEvent, openActivities]);
+
+  async function handleSend(e) {
+    e.preventDefault();
+    if (!selectedEvent) {
+      toast.error('Nenhuma atividade selecionada');
+      return;
+    }
+
+    if (recipientMode === 'teste' && !customEmail.trim()) {
+      toast.error('Informe o e-mail de teste');
+      return;
+    }
+
+    if (recipientMode === 'todos') {
+      const confirmAll = window.confirm(
+        `Confirma o disparo oficial do lembrete sobre "${selectedEvent.titulo}" para TODOS os membros ativos da equipe?`
+      );
+      if (!confirmAll) return;
+    }
+
+    setSending(true);
+    const isTest = recipientMode === 'teste';
+    const target = isTest ? customEmail.trim() : undefined;
+    const tId = toast.loading(
+      isTest
+        ? `Enviando e-mail de teste para ${customEmail.trim()}...`
+        : 'Disparando e-mails para todos os membros ativos...'
+    );
+
+    try {
+      const res = await sendActivityReminder(selectedEvent._id, { targetEmail: target });
+      toast.success(res.message || 'Disparo manual concluído com sucesso!', { id: tId });
+      onSent();
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erro ao disparar e-mail', { id: tId });
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const eventDate = selectedEvent ? new Date(selectedEvent.data) : null;
+  const dateFormatted = eventDate && !isNaN(eventDate.getTime())
+    ? eventDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
+    : '';
+
+  return (
+    <div style={s.overlay} onClick={onClose}>
+      <div style={s.reminderModal} onClick={(e) => e.stopPropagation()}>
+        <div style={s.reminderModalHeader}>
+          <div>
+            <div style={s.reminderModalSubtitle}>COMUNICAÇÃO & NOTIFICAÇÕES</div>
+            <h2 style={s.reminderModalTitle}>Disparo Manual de Lembrete</h2>
+          </div>
+          <button style={s.closeBtn} onClick={onClose}>✕</button>
+        </div>
+
+        <form onSubmit={handleSend} style={s.form}>
+          <div style={s.formGroup}>
+            <label style={s.formLabel}>Selecione a Atividade para Notificar *</label>
+            <select
+              style={s.formSelect}
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+            >
+              {openActivities.map((act) => (
+                <option key={act._id} value={act._id}>
+                  {act.titulo} ({formatDateISO(new Date(act.data))}{act.hora ? ` às ${act.hora}` : ''})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Resumo do Evento Selecionado */}
+          {selectedEvent && (
+            <div style={s.eventPreviewBox}>
+              <div style={s.eventPreviewTop}>
+                <span style={s.eventPreviewCat}>{selectedEvent.categoria}</span>
+                <span style={s.eventPreviewDate}>Data: {dateFormatted} {selectedEvent.hora ? `às ${selectedEvent.hora}` : ''}</span>
+              </div>
+              <div style={s.eventPreviewTitle}>{selectedEvent.titulo}</div>
+              {selectedEvent.local && (
+                <div style={s.eventPreviewSub}>Local: {selectedEvent.local}</div>
+              )}
+              {selectedEvent.descricao && (
+                <div style={s.eventPreviewDesc}>{selectedEvent.descricao}</div>
+              )}
+            </div>
+          )}
+
+          <div style={s.formGroup}>
+            <label style={s.formLabel}>Destinatário do Disparo *</label>
+            
+            <div style={s.radioGroup}>
+              <label style={s.radioLabel}>
+                <input
+                  type="radio"
+                  name="recipientMode"
+                  value="teste"
+                  checked={recipientMode === 'teste'}
+                  onChange={() => setRecipientMode('teste')}
+                  style={{ accentColor: '#0284c7' }}
+                />
+                <div>
+                  <strong>E-mail de Teste</strong>
+                  <div style={s.radioSub}>Envia apenas para o e-mail informado abaixo para validação</div>
+                </div>
+              </label>
+
+              <label style={s.radioLabel}>
+                <input
+                  type="radio"
+                  name="recipientMode"
+                  value="todos"
+                  checked={recipientMode === 'todos'}
+                  onChange={() => setRecipientMode('todos')}
+                  style={{ accentColor: '#0284c7' }}
+                />
+                <div>
+                  <strong>Todos os Membros Ativos</strong>
+                  <div style={s.radioSub}>Dispara para todos os integrantes com status Ativo no sistema</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {recipientMode === 'teste' && (
+            <div style={s.formGroup}>
+              <label style={s.formLabel}>E-mail de Destino para Teste *</label>
+              <input
+                style={s.formInput}
+                type="email"
+                placeholder="nome@estudante.ufjf.br"
+                value={customEmail}
+                onChange={(e) => setCustomEmail(e.target.value)}
+                required
+              />
+            </div>
+          )}
+
+          <div style={s.formFooter}>
+            <button type="button" style={s.cancelBtn} onClick={onClose} disabled={sending}>
+              Cancelar
+            </button>
+            <button type="submit" style={s.submitBtn} disabled={sending}>
+              {sending ? 'Disparando E-mail...' : 'Confirmar e Disparar E-mail'}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
@@ -436,6 +609,7 @@ export default function ActivitiesPage() {
   const [detailsEvent, setDetailsEvent] = useState(null);
   const [formModalItem, setFormModalItem] = useState(null); // null = fechado, 'new' = novo, obj = editar
   const [formInitialDate, setFormInitialDate] = useState(null);
+  const [reminderModalItem, setReminderModalItem] = useState(null); // null = fechado, 'open' = geral, obj = pre-selecionado
   const [checkingTomorrow, setCheckingTomorrow] = useState(false);
 
   const fetchActivities = useCallback(async () => {
@@ -761,6 +935,14 @@ export default function ActivitiesPage() {
           </div>
 
           <button
+            style={s.manualReminderHeaderBtn}
+            onClick={() => setReminderModalItem('open')}
+            title="Disparar lembretes por e-mail manualmente (teste ou equipe)"
+          >
+            Disparo Manual de E-mail
+          </button>
+
+          <button
             style={s.tomorrowCheckBtn}
             onClick={handleCheckTomorrow}
             disabled={checkingTomorrow}
@@ -1080,7 +1262,7 @@ export default function ActivitiesPage() {
                             style={s.agendaActionBtn}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleSendTestEmail(act);
+                              setReminderModalItem(act);
                             }}
                           >
                             Disparar E-mail
@@ -1107,7 +1289,22 @@ export default function ActivitiesPage() {
           }}
           onDelete={(e) => handleDelete(e)}
           onToggleComplete={(e) => handleToggleComplete(e)}
-          onSendTest={(e) => handleSendTestEmail(e)}
+          onOpenReminderModal={(e) => {
+            setDetailsEvent(null);
+            setReminderModalItem(e);
+          }}
+        />
+      )}
+
+      {reminderModalItem && (
+        <ManualReminderModal
+          activities={activities}
+          preselectedEvent={reminderModalItem === 'open' ? null : reminderModalItem}
+          onClose={() => setReminderModalItem(null)}
+          onSent={() => {
+            setReminderModalItem(null);
+            fetchActivities();
+          }}
         />
       )}
 
@@ -1253,6 +1450,16 @@ const s = {
     padding: '7px 12px',
     borderRadius: 'var(--radius)',
     fontSize: 12,
+    cursor: 'pointer',
+  },
+  manualReminderHeaderBtn: {
+    background: 'rgba(2, 132, 199, 0.15)',
+    border: '1px solid #0284c7',
+    color: '#38bdf8',
+    padding: '7px 12px',
+    borderRadius: 'var(--radius)',
+    fontSize: 12,
+    fontWeight: 600,
     cursor: 'pointer',
   },
   gCalCreateBtn: {
@@ -1992,5 +2199,98 @@ const s = {
     fontSize: 13,
     fontWeight: 600,
     cursor: 'pointer',
+  },
+
+  // ── Modal de Disparo Manual de Lembrete ──
+  reminderModal: {
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    width: '100%',
+    maxWidth: 540,
+    maxHeight: '90vh',
+    overflowY: 'auto',
+    padding: '24px',
+  },
+  reminderModalHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottom: '1px solid var(--border)',
+  },
+  reminderModalSubtitle: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: '#0284c7',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  reminderModalTitle: {
+    fontSize: 18,
+    fontWeight: 700,
+    margin: '4px 0 0 0',
+    color: 'var(--text-primary)',
+  },
+  eventPreviewBox: {
+    background: 'var(--bg)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    padding: '12px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  eventPreviewTop: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: 12,
+  },
+  eventPreviewCat: {
+    fontWeight: 600,
+    color: '#0284c7',
+  },
+  eventPreviewDate: {
+    color: 'var(--text-muted)',
+  },
+  eventPreviewTitle: {
+    fontSize: 15,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+  },
+  eventPreviewSub: {
+    fontSize: 12,
+    color: 'var(--text-muted)',
+  },
+  eventPreviewDesc: {
+    fontSize: 12,
+    color: 'var(--text-muted)',
+    borderTop: '1px dashed var(--border)',
+    paddingTop: 6,
+    marginTop: 4,
+  },
+  radioGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  radioLabel: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: 10,
+    padding: '10px 12px',
+    background: 'var(--bg)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    cursor: 'pointer',
+    fontSize: 13,
+    color: 'var(--text-primary)',
+  },
+  radioSub: {
+    fontSize: 12,
+    color: 'var(--text-muted)',
+    marginTop: 2,
   },
 };
