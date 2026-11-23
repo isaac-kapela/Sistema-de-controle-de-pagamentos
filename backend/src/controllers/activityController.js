@@ -3,6 +3,7 @@ const {
   sendActivityReminderToActiveMembers,
   checkAndSendTomorrowActivities,
 } = require('../services/activityReminder');
+const { syncMeetingsToActivities } = require('../services/meetingSync');
 
 // Lista todas as atividades com filtros e busca
 exports.list = async (req, res) => {
@@ -226,6 +227,24 @@ exports.sendManualReminder = async (req, res) => {
       sentCount: result.sentCount,
       total: result.total,
       message: msg,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Sincroniza reuniões da coleção de Presenças/Semestre para Atividades
+exports.syncMeetings = async (req, res) => {
+  try {
+    const { semesterId } = req.body || {};
+    const result = await syncMeetingsToActivities(semesterId);
+    if (!result.ok) {
+      return res.status(500).json({ error: result.error || 'Erro ao sincronizar reuniões' });
+    }
+    res.json({
+      ok: true,
+      syncedCount: result.syncedCount,
+      message: `${result.syncedCount} reuniões sincronizadas para o calendário de atividades com sucesso!`,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

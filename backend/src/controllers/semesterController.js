@@ -1,6 +1,7 @@
 const Semester = require('../models/Semester');
 const Meeting = require('../models/Meeting');
 const Attendance = require('../models/Attendance');
+const { syncMeetingsToActivities } = require('../services/meetingSync');
 
 // Lista todos os semestres
 const listSemesters = async (req, res) => {
@@ -97,6 +98,8 @@ const generateMeetings = async (req, res) => {
     if (operations.length > 0) {
       const result = await Meeting.bulkWrite(operations);
       created = result.upsertedCount;
+      // Sincroniza automaticamente as reuniões geradas com o calendário de Atividades
+      await syncMeetingsToActivities(semester._id);
     }
 
     res.json({ message: `${created} reuniões geradas (${operations.length} datas processadas)`, total: operations.length, created });
