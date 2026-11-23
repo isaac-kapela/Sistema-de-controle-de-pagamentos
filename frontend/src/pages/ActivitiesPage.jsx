@@ -11,84 +11,239 @@ import {
   deleteActivity,
 } from '../services/api';
 
-const CATEGORIES = [
-  'Reunião Geral',
-  'Workshop / Treinamento',
-  'Entrega / Relatório',
-  'Competição',
-  'Marco de Projeto',
-  'Social / Integração',
-  'Outro',
-];
-
-const PRIORITIES = [
-  { value: 'alta', label: 'Alta', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' },
-  { value: 'media', label: 'Média', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' },
-  { value: 'baixa', label: 'Baixa', color: '#3b82f6', bg: 'rgba(59, 130, 246, 0.15)' },
-];
-
-const EMPTY_FORM = {
-  titulo: '',
-  descricao: '',
-  data: '',
-  hora: '',
-  local: '',
-  categoria: 'Reunião Geral',
-  prioridade: 'media',
-  responsavel: '',
-  notificarEmail: true,
+const CATEGORY_COLORS = {
+  'Reunião Geral': { bg: '#0284c7', text: '#ffffff', lightBg: 'rgba(2, 132, 199, 0.15)', border: '#0284c7' },
+  'Workshop / Treinamento': { bg: '#10b981', text: '#ffffff', lightBg: 'rgba(16, 185, 129, 0.15)', border: '#10b981' },
+  'Entrega / Relatório': { bg: '#f59e0b', text: '#ffffff', lightBg: 'rgba(245, 158, 11, 0.15)', border: '#f59e0b' },
+  'Competição': { bg: '#ef4444', text: '#ffffff', lightBg: 'rgba(239, 68, 68, 0.15)', border: '#ef4444' },
+  'Marco de Projeto': { bg: '#8b5cf6', text: '#ffffff', lightBg: 'rgba(139, 92, 246, 0.15)', border: '#8b5cf6' },
+  'Social / Integração': { bg: '#ec4899', text: '#ffffff', lightBg: 'rgba(236, 72, 153, 0.15)', border: '#ec4899' },
+  'Outro': { bg: '#6b7280', text: '#ffffff', lightBg: 'rgba(107, 114, 128, 0.15)', border: '#6b7280' },
 };
 
-function formatIsoDateForInput(dateStr) {
+const CATEGORIES = Object.keys(CATEGORY_COLORS);
+
+const PRIORITIES = [
+  { value: 'alta', label: 'Alta', color: '#ef4444' },
+  { value: 'media', label: 'Média', color: '#f59e0b' },
+  { value: 'baixa', label: 'Baixa', color: '#3b82f6' },
+];
+
+const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const MONTHS = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+];
+
+function getCategoryColor(cat) {
+  return CATEGORY_COLORS[cat] || CATEGORY_COLORS['Outro'];
+}
+
+function formatDateISO(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function parseActivityDateKey(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '';
-  return d.toISOString().split('T')[0];
+  return formatDateISO(d);
 }
 
-function formatDateDisplay(dateStr) {
-  if (!dateStr) return 'Data não definida';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString('pt-BR', {
-    weekday: 'short',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
+// ── Mini Calendário para o Painel Lateral ─────────────────────
+function MiniCalendar({ currentYear, currentMonth, selectedDate, onSelectDate }) {
+  const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+  const days = [];
+  for (let i = 0; i < firstDay; i++) {
+    days.push(null);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    days.push(d);
+  }
+
+  const today = new Date();
+  const isThisMonth = today.getFullYear() === currentYear && today.getMonth() === currentMonth;
+
+  return (
+    <div style={s.miniCal}>
+      <div style={s.miniCalWeekdays}>
+        {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((wd, i) => (
+          <span key={i} style={s.miniCalWeekday}>{wd}</span>
+        ))}
+      </div>
+      <div style={s.miniCalGrid}>
+        {days.map((day, idx) => {
+          if (!day) return <div key={`empty-${idx}`} style={s.miniCalCellEmpty} />;
+          const isToday = isThisMonth && today.getDate() === day;
+          const cellDate = new Date(currentYear, currentMonth, day);
+          const isSelected = selectedDate && formatDateISO(selectedDate) === formatDateISO(cellDate);
+
+          return (
+            <button
+              key={day}
+              style={{
+                ...s.miniCalCell,
+                ...(isToday ? s.miniCalCellToday : {}),
+                ...(isSelected ? s.miniCalCellSelected : {}),
+              }}
+              onClick={() => onSelectDate(cellDate)}
+            >
+              {day}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
-function getRelativeDayLabel(dateStr) {
-  if (!dateStr) return null;
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return null;
+// ── Modal de Detalhes / Visualização do Evento ────────────────
+function EventDetailsModal({ event, onClose, onEdit, onDelete, onToggleComplete, onSendTest }) {
+  if (!event) return null;
+  const catColor = getCategoryColor(event.categoria);
+  const prio = PRIORITIES.find((p) => p.value === event.prioridade) || PRIORITIES[1];
+  const isMeet = event.local && (event.local.startsWith('http://') || event.local.startsWith('https://'));
 
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const eventDate = new Date(event.data);
+  const dateFormatted = !isNaN(eventDate.getTime())
+    ? eventDate.toLocaleDateString('pt-BR', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })
+    : event.data;
 
-  const diffTime = target.getTime() - today.getTime();
-  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  return (
+    <div style={s.overlay} onClick={onClose}>
+      <div style={s.detailsModal} onClick={(e) => e.stopPropagation()}>
+        {/* Top Color Accent */}
+        <div style={{ ...s.detailsHeaderBar, backgroundColor: catColor.bg }}>
+          <div style={s.detailsHeaderCategory}>{event.categoria}</div>
+          <button style={s.detailsCloseBtn} onClick={onClose}>✕</button>
+        </div>
 
-  if (diffDays === 0) return { label: 'Hoje', badgeColor: '#ef4444', isUrgent: true };
-  if (diffDays === 1) return { label: 'Amanhã', badgeColor: '#f59e0b', isUrgent: true };
-  if (diffDays > 1 && diffDays <= 7) return { label: `Em ${diffDays} dias`, badgeColor: '#10b981', isUrgent: false };
-  if (diffDays > 7) return { label: `Em ${diffDays} dias`, badgeColor: '#6b7280', isUrgent: false };
-  return { label: `Há ${Math.abs(diffDays)} dia(s)`, badgeColor: '#4b5563', isUrgent: false, isPast: true };
+        <div style={s.detailsContent}>
+          <div style={s.detailsTopRow}>
+            <span
+              style={{
+                ...s.priorityPill,
+                color: prio.color,
+                borderColor: prio.color,
+              }}
+            >
+              Prioridade {prio.label}
+            </span>
+            {event.concluida && <span style={s.completedPill}>Concluída</span>}
+          </div>
+
+          <h2 style={{ ...s.detailsTitle, textDecoration: event.concluida ? 'line-through' : 'none' }}>
+            {event.titulo}
+          </h2>
+
+          <div style={s.detailsSection}>
+            <div style={s.detailsRow}>
+              <span style={s.detailsLabel}>Data e Hora:</span>
+              <span style={s.detailsValue}>
+                {dateFormatted} {event.hora ? `às ${event.hora}` : ''}
+              </span>
+            </div>
+
+            {event.local && (
+              <div style={s.detailsRow}>
+                <span style={s.detailsLabel}>Local / Link:</span>
+                <span style={s.detailsValue}>
+                  {isMeet ? (
+                    <a href={event.local} target="_blank" rel="noopener noreferrer" style={s.meetLink}>
+                      Acessar link da reunião
+                    </a>
+                  ) : (
+                    event.local
+                  )}
+                </span>
+              </div>
+            )}
+
+            {event.responsavel && (
+              <div style={s.detailsRow}>
+                <span style={s.detailsLabel}>Responsável:</span>
+                <span style={s.detailsValue}>{event.responsavel}</span>
+              </div>
+            )}
+
+            <div style={s.detailsRow}>
+              <span style={s.detailsLabel}>Notificação:</span>
+              <span style={s.detailsValue}>
+                {event.notificarEmail ? (
+                  event.notificacaoEnviada ? (
+                    <span style={{ color: '#10b981' }}>
+                      E-mail enviado em {new Date(event.notificadoEm).toLocaleDateString('pt-BR')}
+                    </span>
+                  ) : (
+                    <span style={{ color: '#f59e0b' }}>
+                      Agendado para envio 1 dia antes às 08:00
+                    </span>
+                  )
+                ) : (
+                  <span style={{ color: '#6b7280' }}>Desativada</span>
+                )}
+              </span>
+            </div>
+
+            {event.descricao && (
+              <div style={s.detailsDescBox}>
+                <div style={s.detailsLabel}>Descrição / Pauta:</div>
+                <div style={s.detailsDescText}>{event.descricao}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div style={s.detailsActions}>
+            <button style={s.actionBtnSecondary} onClick={() => onToggleComplete(event)}>
+              {event.concluida ? 'Reabrir Atividade' : 'Marcar como Concluída'}
+            </button>
+            <button style={s.actionBtnEmail} onClick={() => onSendTest(event)}>
+              Disparar E-mail
+            </button>
+            <button style={s.actionBtnSecondary} onClick={() => onEdit(event)}>
+              Editar
+            </button>
+            <button style={s.actionBtnDanger} onClick={() => onDelete(event)}>
+              Excluir
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-// ── Modal de Criação / Edição ─────────────────────────────────
-function ActivityModal({ item, onClose, onSaved }) {
+// ── Modal de Criação / Edição (Estilo Google Agenda) ─────────
+function EventFormModal({ item, initialDate, onClose, onSaved }) {
   const [form, setForm] = useState(() => {
     if (item) {
+      const d = item.data ? new Date(item.data) : new Date();
       return {
         ...item,
-        data: formatIsoDateForInput(item.data),
+        data: !isNaN(d.getTime()) ? formatDateISO(d) : '',
       };
     }
     return {
-      ...EMPTY_FORM,
-      data: new Date().toISOString().split('T')[0],
+      titulo: '',
+      descricao: '',
+      data: initialDate ? formatDateISO(initialDate) : formatDateISO(new Date()),
+      hora: '12:00',
+      local: '',
+      categoria: 'Reunião Geral',
+      prioridade: 'media',
+      responsavel: '',
+      notificarEmail: true,
     };
   });
   const [saving, setSaving] = useState(false);
@@ -100,22 +255,22 @@ function ActivityModal({ item, onClose, onSaved }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.titulo.trim()) {
-      toast.error('Título da atividade é obrigatório');
+      toast.error('Título é obrigatório');
       return;
     }
     if (!form.data) {
-      toast.error('Data da atividade é obrigatória');
+      toast.error('Data é obrigatória');
       return;
     }
 
     setSaving(true);
     try {
-      if (item) {
+      if (item && item._id) {
         await updateActivity(item._id, form);
-        toast.success('Atividade atualizada com sucesso');
+        toast.success('Atividade atualizada');
       } else {
         await createActivity(form);
-        toast.success('Atividade criada com sucesso!');
+        toast.success('Atividade agendada com sucesso');
       }
       onSaved();
     } catch (err) {
@@ -127,46 +282,44 @@ function ActivityModal({ item, onClose, onSaved }) {
 
   return (
     <div style={s.overlay} onClick={onClose}>
-      <div style={s.modal} onClick={(e) => e.stopPropagation()}>
-        <div style={s.modalHeader}>
-          <div>
-            <div style={s.modalSubTitle}>{item ? 'EDITAR ATIVIDADE' : 'NOVA ATIVIDADE / EVENTO'}</div>
-            <h2 style={s.modalTitle}>{item ? item.titulo : 'Agendar Atividade na Agenda'}</h2>
-          </div>
+      <div style={s.formModal} onClick={(e) => e.stopPropagation()}>
+        <div style={s.formHeader}>
+          <h2 style={s.formTitle}>{item ? 'Editar Evento' : 'Novo Evento / Atividade'}</h2>
           <button style={s.closeBtn} onClick={onClose}>✕</button>
         </div>
 
         <form onSubmit={handleSubmit} style={s.form}>
           <div style={s.formGroup}>
-            <label style={s.label}>Título do Evento / Atividade *</label>
+            <label style={s.formLabel}>Título da Atividade *</label>
             <input
-              style={s.input}
+              style={s.formInput}
               type="text"
-              placeholder="Ex: Reunião Geral de Alinhamento Semanal"
+              placeholder="Ex: Reunião Geral de Alinhamento"
               value={form.titulo}
               onChange={(e) => setField('titulo', e.target.value)}
               required
+              autoFocus
             />
           </div>
 
           <div style={s.formRow}>
             <div style={s.formGroup}>
-              <label style={s.label}>Categoria *</label>
+              <label style={s.formLabel}>Categoria *</label>
               <select
-                style={s.select}
+                style={s.formSelect}
                 value={form.categoria}
                 onChange={(e) => setField('categoria', e.target.value)}
               >
-                {CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </div>
 
             <div style={s.formGroup}>
-              <label style={s.label}>Prioridade *</label>
+              <label style={s.formLabel}>Prioridade *</label>
               <select
-                style={s.select}
+                style={s.formSelect}
                 value={form.prioridade}
                 onChange={(e) => setField('prioridade', e.target.value)}
               >
@@ -179,9 +332,9 @@ function ActivityModal({ item, onClose, onSaved }) {
 
           <div style={s.formRow}>
             <div style={s.formGroup}>
-              <label style={s.label}>Data do Evento *</label>
+              <label style={s.formLabel}>Data *</label>
               <input
-                style={s.input}
+                style={s.formInput}
                 type="date"
                 value={form.data}
                 onChange={(e) => setField('data', e.target.value)}
@@ -190,9 +343,9 @@ function ActivityModal({ item, onClose, onSaved }) {
             </div>
 
             <div style={s.formGroup}>
-              <label style={s.label}>Horário (opcional)</label>
+              <label style={s.formLabel}>Horário</label>
               <input
-                style={s.input}
+                style={s.formInput}
                 type="text"
                 placeholder="Ex: 12:00 ou 12:00 às 13:00"
                 value={form.hora || ''}
@@ -203,9 +356,9 @@ function ActivityModal({ item, onClose, onSaved }) {
 
           <div style={s.formRow}>
             <div style={s.formGroup}>
-              <label style={s.label}>Local ou Link da Reunião</label>
+              <label style={s.formLabel}>Local ou Link da Reunião</label>
               <input
-                style={s.input}
+                style={s.formInput}
                 type="text"
                 placeholder="Ex: Lab Microraptor ou https://meet.google.com/..."
                 value={form.local || ''}
@@ -214,11 +367,11 @@ function ActivityModal({ item, onClose, onSaved }) {
             </div>
 
             <div style={s.formGroup}>
-              <label style={s.label}>Responsável / Líder</label>
+              <label style={s.formLabel}>Responsável / Líder</label>
               <input
-                style={s.input}
+                style={s.formInput}
                 type="text"
-                placeholder="Ex: Capitão / Diretor de Projetos"
+                placeholder="Ex: Capitania / Projetos"
                 value={form.responsavel || ''}
                 onChange={(e) => setField('responsavel', e.target.value)}
               />
@@ -235,28 +388,28 @@ function ActivityModal({ item, onClose, onSaved }) {
               />
               <span>
                 <strong>Notificar membros ativos por e-mail 1 dia antes</strong>
-                <span style={s.checkboxSub}> (O sistema dispara um e-mail com pauta e detalhes para a equipe)</span>
+                <span style={s.checkboxSub}> (Disparo automático às 08:00 com detalhes)</span>
               </span>
             </label>
           </div>
 
           <div style={s.formGroup}>
-            <label style={s.label}>Descrição / Pauta / Informações Adicionais</label>
+            <label style={s.formLabel}>Descrição / Pauta / Notas</label>
             <textarea
-              style={s.textarea}
-              rows={4}
-              placeholder="Descreva a pauta da reunião, materiais necessários, links importantes ou detalhes da entrega..."
+              style={s.formTextarea}
+              rows={3}
+              placeholder="Descreva a pauta, links ou informações adicionais..."
               value={form.descricao || ''}
               onChange={(e) => setField('descricao', e.target.value)}
             />
           </div>
 
-          <div style={s.modalFooter}>
+          <div style={s.formFooter}>
             <button type="button" style={s.cancelBtn} onClick={onClose} disabled={saving}>
               Cancelar
             </button>
             <button type="submit" style={s.submitBtn} disabled={saving}>
-              {saving ? 'Salvando...' : item ? 'Salvar Alterações' : 'Criar Atividade'}
+              {saving ? 'Salvando...' : item ? 'Salvar Alterações' : 'Salvar no Calendário'}
             </button>
           </div>
         </form>
@@ -265,15 +418,24 @@ function ActivityModal({ item, onClose, onSaved }) {
   );
 }
 
-// ── Página Principal ──────────────────────────────────────────
+// ── Componente Principal: Google Agenda ───────────────────────
 export default function ActivitiesPage() {
   const { isAdmin } = useAuth();
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Navegação no Calendário (Ano / Mês / Data Selecionada)
+  const [viewDate, setViewDate] = useState(() => new Date());
+  const [viewMode, setViewMode] = useState('mes'); // 'mes', 'semana', 'agenda'
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('abertas'); // 'todas', 'abertas', 'proximas', 'concluidas', 'alta'
-  const [modalItem, setModalItem] = useState(null); // null = fechado, 'new' = novo, obj = editar
+
+  // Filtro de Categorias no Painel Lateral
+  const [activeCategories, setActiveCategories] = useState(() => new Set(CATEGORIES));
+
+  // Modais
+  const [detailsEvent, setDetailsEvent] = useState(null);
+  const [formModalItem, setFormModalItem] = useState(null); // null = fechado, 'new' = novo, obj = editar
+  const [formInitialDate, setFormInitialDate] = useState(null);
   const [checkingTomorrow, setCheckingTomorrow] = useState(false);
 
   const fetchActivities = useCallback(async () => {
@@ -282,8 +444,8 @@ export default function ActivitiesPage() {
       const data = await getActivities();
       const list = Array.isArray(data) ? data : (data?.activities || []);
       setActivities(list);
-    } catch (err) {
-      toast.error('Erro ao carregar atividades');
+    } catch {
+      toast.error('Erro ao carregar atividades da agenda');
       setActivities([]);
     } finally {
       setLoading(false);
@@ -294,86 +456,131 @@ export default function ActivitiesPage() {
     fetchActivities();
   }, [fetchActivities]);
 
-  // Estatísticas Rápidas (KPIs)
-  const stats = useMemo(() => {
-    const list = Array.isArray(activities) ? activities : [];
-    const total = list.length;
-    const open = list.filter((a) => !a.concluida);
-    const completed = list.filter((a) => a.concluida);
-    const highPriority = open.filter((a) => a.prioridade === 'alta');
-
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const sevenDays = new Date(today);
-    sevenDays.setDate(sevenDays.getDate() + 7);
-
-    const next7Days = open.filter((a) => {
-      if (!a.data) return false;
-      const d = new Date(a.data);
-      const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-      return target >= today && target <= sevenDays;
+  // Navegação de Datas
+  function handlePrev() {
+    setViewDate((prev) => {
+      const next = new Date(prev);
+      if (viewMode === 'mes') {
+        next.setMonth(next.getMonth() - 1);
+      } else if (viewMode === 'semana') {
+        next.setDate(next.getDate() - 7);
+      } else {
+        next.setMonth(next.getMonth() - 1);
+      }
+      return next;
     });
+  }
 
-    return {
-      total,
-      open: open.length,
-      completed: completed.length,
-      highPriority: highPriority.length,
-      next7Days: next7Days.length,
-    };
-  }, [activities]);
+  function handleNext() {
+    setViewDate((prev) => {
+      const next = new Date(prev);
+      if (viewMode === 'mes') {
+        next.setMonth(next.getMonth() + 1);
+      } else if (viewMode === 'semana') {
+        next.setDate(next.getDate() + 7);
+      } else {
+        next.setMonth(next.getMonth() + 1);
+      }
+      return next;
+    });
+  }
 
-  // Filtros aplicados
+  function handleToday() {
+    setViewDate(new Date());
+  }
+
+  function toggleCategory(cat) {
+    setActiveCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) {
+        if (next.size > 1) next.delete(cat);
+      } else {
+        next.add(cat);
+      }
+      return next;
+    });
+  }
+
+  function selectAllCategories() {
+    setActiveCategories(new Set(CATEGORIES));
+  }
+
+  // Filtragem dos eventos
   const filteredActivities = useMemo(() => {
     const list = Array.isArray(activities) ? activities : [];
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const sevenDays = new Date(today);
-    sevenDays.setDate(sevenDays.getDate() + 7);
-
     return list.filter((act) => {
-      // Busca textual
+      if (!activeCategories.has(act.categoria)) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
         const matchTitle = act.titulo?.toLowerCase().includes(q);
         const matchDesc = act.descricao?.toLowerCase().includes(q);
         const matchLocal = act.local?.toLowerCase().includes(q);
         const matchResp = act.responsavel?.toLowerCase().includes(q);
-        const matchCat = act.categoria?.toLowerCase().includes(q);
-        if (!matchTitle && !matchDesc && !matchLocal && !matchResp && !matchCat) return false;
+        if (!matchTitle && !matchDesc && !matchLocal && !matchResp) return false;
       }
-
-      // Categoria
-      if (categoryFilter && act.categoria !== categoryFilter) return false;
-
-      // Status / Período
-      if (statusFilter === 'abertas' && act.concluida) return false;
-      if (statusFilter === 'concluidas' && !act.concluida) return false;
-      if (statusFilter === 'alta') {
-        if (act.concluida || act.prioridade !== 'alta') return false;
-      }
-      if (statusFilter === 'proximas') {
-        if (act.concluida || !act.data) return false;
-        const d = new Date(act.data);
-        const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-        if (target < today || target > sevenDays) return false;
-      }
-
       return true;
     });
-  }, [activities, search, categoryFilter, statusFilter]);
+  }, [activities, activeCategories, search]);
 
+  // Mapa de eventos por data ISO (YYYY-MM-DD)
+  const activitiesByDate = useMemo(() => {
+    const map = {};
+    for (const act of filteredActivities) {
+      const key = parseActivityDateKey(act.data);
+      if (!key) continue;
+      if (!map[key]) map[key] = [];
+      map[key].push(act);
+    }
+    // Ordena eventos do dia por horário
+    for (const key in map) {
+      map[key].sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
+    }
+    return map;
+  }, [filteredActivities]);
+
+  // Estatísticas Rápidas
+  const stats = useMemo(() => {
+    const list = Array.isArray(activities) ? activities : [];
+    const open = list.filter((a) => !a.concluida);
+    const completed = list.filter((a) => a.concluida);
+    const high = open.filter((a) => a.prioridade === 'alta');
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const in7 = new Date(today);
+    in7.setDate(in7.getDate() + 7);
+
+    const next7Days = open.filter((a) => {
+      if (!a.data) return false;
+      const d = new Date(a.data);
+      const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return target >= today && target <= in7;
+    });
+
+    return {
+      total: list.length,
+      open: open.length,
+      completed: completed.length,
+      high: high.length,
+      next7Days: next7Days.length,
+    };
+  }, [activities]);
+
+  // Ações de Eventos
   async function handleToggleComplete(act) {
     try {
       const updated = await toggleActivityComplete(act._id);
-      toast.success(updated.concluida ? 'Atividade marcada como concluída!' : 'Atividade reaberta!');
+      toast.success(updated.concluida ? 'Atividade concluída' : 'Atividade reaberta');
       setActivities((prev) => prev.map((a) => (a._id === act._id ? updated : a)));
-    } catch (err) {
-      toast.error('Erro ao alterar status da atividade');
+      if (detailsEvent && detailsEvent._id === act._id) {
+        setDetailsEvent(updated);
+      }
+    } catch {
+      toast.error('Erro ao atualizar status');
     }
   }
 
-  async function handleSendReminder(act) {
+  async function handleSendTestEmail(act) {
     const defaultEmail = 'dizolele.isaac@estudante.ufjf.br';
     const inputEmail = window.prompt(
       `Enviar e-mail sobre "${act.titulo}".\nDigite o e-mail de destino para teste (ou deixe em branco para enviar a todos os membros ativos):`,
@@ -386,10 +593,25 @@ export default function ActivitiesPage() {
     const tId = toast.loading(isTest ? `Enviando e-mail de teste para ${inputEmail.trim()}...` : 'Disparando e-mails para membros ativos...');
     try {
       const res = await sendActivityReminder(act._id, { targetEmail: isTest ? inputEmail.trim() : undefined });
-      toast.success(res.message || 'Lembrete enviado com sucesso!', { id: tId });
+      toast.success(res.message || 'Lembrete enviado com sucesso', { id: tId });
       fetchActivities();
+      if (detailsEvent && detailsEvent._id === act._id) {
+        setDetailsEvent((prev) => ({ ...prev, notificacaoEnviada: true, notificadoEm: new Date() }));
+      }
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Erro ao enviar lembretes', { id: tId });
+      toast.error(err.response?.data?.error || 'Erro ao enviar e-mail', { id: tId });
+    }
+  }
+
+  async function handleDelete(act) {
+    if (!window.confirm(`Excluir a atividade "${act.titulo}"?`)) return;
+    try {
+      await deleteActivity(act._id);
+      toast.success('Atividade excluída');
+      setActivities((prev) => prev.filter((a) => a._id !== act._id));
+      setDetailsEvent(null);
+    } catch {
+      toast.error('Erro ao excluir atividade');
     }
   }
 
@@ -399,9 +621,9 @@ export default function ActivitiesPage() {
     try {
       const res = await checkTomorrowActivities();
       if (res.processedCount > 0) {
-        toast.success(`Processamento concluído: ${res.processedCount} evento(s) notificado(s)!`, { id: tId });
+        toast.success(`Processamento concluído: ${res.processedCount} evento(s) notificado(s)`, { id: tId });
       } else {
-        toast.success(res.message || 'Nenhum evento pendente para amanhã.', { id: tId });
+        toast.success(res.message || 'Nenhum evento pendente para amanhã', { id: tId });
       }
       fetchActivities();
     } catch (err) {
@@ -411,278 +633,495 @@ export default function ActivitiesPage() {
     }
   }
 
-  async function handleDelete(act) {
-    if (!window.confirm(`Tem certeza que deseja excluir a atividade "${act.titulo}"?`)) return;
-    try {
-      await deleteActivity(act._id);
-      toast.success('Atividade excluída com sucesso');
-      setActivities((prev) => prev.filter((a) => a._id !== act._id));
-    } catch (err) {
-      toast.error('Erro ao excluir atividade');
-    }
+  function handleOpenCreate(date = null) {
+    setFormInitialDate(date || viewDate);
+    setFormModalItem('new');
   }
 
+  // Cálculos para a grade de Mês
+  const monthDaysGrid = useMemo(() => {
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+
+    const firstDayIndex = new Date(year, month, 1).getDay();
+    const daysInCurrentMonth = new Date(year, month + 1, 0).getDate();
+    const daysInPrevMonth = new Date(year, month, 0).getDate();
+
+    const grid = [];
+
+    // Dias do mês anterior
+    for (let i = firstDayIndex - 1; i >= 0; i--) {
+      const dayNum = daysInPrevMonth - i;
+      const d = new Date(year, month - 1, dayNum);
+      grid.push({ date: d, isCurrentMonth: false, dayNum });
+    }
+
+    // Dias do mês atual
+    for (let d = 1; d <= daysInCurrentMonth; d++) {
+      const dateObj = new Date(year, month, d);
+      grid.push({ date: dateObj, isCurrentMonth: true, dayNum: d });
+    }
+
+    // Dias do próximo mês para completar 35 ou 42 células
+    const remaining = (7 - (grid.length % 7)) % 7;
+    const totalCells = grid.length + remaining < 35 ? 35 : grid.length + remaining;
+    const neededNext = totalCells - grid.length;
+
+    for (let d = 1; d <= neededNext; d++) {
+      const dateObj = new Date(year, month + 1, d);
+      grid.push({ date: dateObj, isCurrentMonth: false, dayNum: d });
+    }
+
+    return grid;
+  }, [viewDate]);
+
+  // Cálculos para a visualização de Semana
+  const weekDays = useMemo(() => {
+    const curr = new Date(viewDate);
+    const dayOfWeek = curr.getDay(); // 0 = Dom
+    const startOfWeek = new Date(curr);
+    startOfWeek.setDate(curr.getDate() - dayOfWeek);
+
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }, [viewDate]);
+
+  const currentYear = viewDate.getFullYear();
+  const currentMonth = viewDate.getMonth();
+  const todayStr = formatDateISO(new Date());
+
   return (
-    <div style={s.container}>
-      {/* Header */}
-      <div style={s.pageHeader}>
-        <div>
-          <h1 style={s.pageTitle}>Atividades & Agenda</h1>
-          <p style={s.pageSubtitle}>
-            Acompanhe eventos importantes, reuniões, competições e entregas. Membros ativos recebem lembrete por e-mail 1 dia antes.
-          </p>
+    <div style={s.googleAgendaWrapper}>
+      {/* ── Top Bar / Google Calendar Header ── */}
+      <header style={s.gCalHeader}>
+        <div style={s.headerLeft}>
+          <button style={s.todayBtn} onClick={handleToday}>
+            Hoje
+          </button>
+          <div style={s.navArrows}>
+            <button style={s.arrowBtn} onClick={handlePrev} title="Anterior">
+              ‹
+            </button>
+            <button style={s.arrowBtn} onClick={handleNext} title="Próximo">
+              ›
+            </button>
+          </div>
+          <h1 style={s.currentMonthTitle}>
+            {MONTHS[currentMonth]} de {currentYear}
+          </h1>
         </div>
-        <div style={s.headerActions}>
+
+        <div style={s.headerRight}>
+          <div style={s.searchBox}>
+            <input
+              style={s.searchInput}
+              type="text"
+              placeholder="Pesquisar atividades..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            {search && (
+              <button style={s.clearSearchBtn} onClick={() => setSearch('')}>✕</button>
+            )}
+          </div>
+
+          <div style={s.viewToggleGroup}>
+            <button
+              style={{
+                ...s.viewToggleBtn,
+                ...(viewMode === 'mes' ? s.viewToggleBtnActive : {}),
+              }}
+              onClick={() => setViewMode('mes')}
+            >
+              Mês
+            </button>
+            <button
+              style={{
+                ...s.viewToggleBtn,
+                ...(viewMode === 'semana' ? s.viewToggleBtnActive : {}),
+              }}
+              onClick={() => setViewMode('semana')}
+            >
+              Semana
+            </button>
+            <button
+              style={{
+                ...s.viewToggleBtn,
+                ...(viewMode === 'agenda' ? s.viewToggleBtnActive : {}),
+              }}
+              onClick={() => setViewMode('agenda')}
+            >
+              Agenda
+            </button>
+          </div>
+
           <button
-            style={s.secondaryBtn}
+            style={s.tomorrowCheckBtn}
             onClick={handleCheckTomorrow}
             disabled={checkingTomorrow}
             title="Verifica se há eventos agendados para amanhã e dispara os e-mails pendentes"
           >
-            {checkingTomorrow ? 'Verificando...' : 'Verificar Eventos de Amanhã'}
+            {checkingTomorrow ? 'Verificando...' : 'Verificar Amanhã'}
           </button>
-          <button style={s.primaryBtn} onClick={() => setModalItem('new')}>
-            + Nova Atividade
+
+          <button style={s.gCalCreateBtn} onClick={() => handleOpenCreate()}>
+            + Criar Atividade
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* KPI Cards */}
-      <div style={s.kpiGrid}>
-        <div style={s.kpiCard} onClick={() => setStatusFilter('proximas')}>
-          <div style={s.kpiValue}>{stats.next7Days}</div>
-          <div style={s.kpiLabel}>Próximos 7 Dias</div>
-          <div style={{ ...s.kpiIndicator, color: '#10b981' }}>Foco Imediato</div>
-        </div>
+      {/* ── Main Layout: Sidebar + Calendar Grid ── */}
+      <div style={s.gCalBody}>
+        {/* Left Sidebar */}
+        <aside style={s.gCalSidebar}>
+          {/* Mini Calendar Widget */}
+          <div style={s.sidebarSection}>
+            <MiniCalendar
+              currentYear={currentYear}
+              currentMonth={currentMonth}
+              selectedDate={viewDate}
+              onSelectDate={(d) => setViewDate(d)}
+            />
+          </div>
 
-        <div style={s.kpiCard} onClick={() => setStatusFilter('abertas')}>
-          <div style={s.kpiValue}>{stats.open}</div>
-          <div style={s.kpiLabel}>Atividades em Aberto</div>
-          <div style={{ ...s.kpiIndicator, color: '#3b82f6' }}>Pendentes na Agenda</div>
-        </div>
+          {/* KPI Summary */}
+          <div style={s.sidebarSection}>
+            <div style={s.sidebarSectionHeader}>Resumo de Compromissos</div>
+            <div style={s.kpiMiniGrid}>
+              <div style={s.kpiMiniCard}>
+                <div style={s.kpiMiniVal}>{stats.next7Days}</div>
+                <div style={s.kpiMiniLbl}>Próximos 7 Dias</div>
+              </div>
+              <div style={s.kpiMiniCard}>
+                <div style={s.kpiMiniVal}>{stats.open}</div>
+                <div style={s.kpiMiniLbl}>Em Aberto</div>
+              </div>
+              <div style={s.kpiMiniCard}>
+                <div style={{ ...s.kpiMiniVal, color: '#ef4444' }}>{stats.high}</div>
+                <div style={s.kpiMiniLbl}>Alta Prioridade</div>
+              </div>
+              <div style={s.kpiMiniCard}>
+                <div style={{ ...s.kpiMiniVal, color: '#10b981' }}>{stats.completed}</div>
+                <div style={s.kpiMiniLbl}>Concluídas</div>
+              </div>
+            </div>
+          </div>
 
-        <div style={s.kpiCard} onClick={() => setStatusFilter('alta')}>
-          <div style={s.kpiValue}>{stats.highPriority}</div>
-          <div style={s.kpiLabel}>Alta Prioridade</div>
-          <div style={{ ...s.kpiIndicator, color: '#ef4444' }}>Crítico / Importante</div>
-        </div>
-
-        <div style={s.kpiCard} onClick={() => setStatusFilter('concluidas')}>
-          <div style={s.kpiValue}>{stats.completed}</div>
-          <div style={s.kpiLabel}>Concluídas</div>
-          <div style={{ ...s.kpiIndicator, color: '#9ca3af' }}>Histórico finalizado</div>
-        </div>
-      </div>
-
-      {/* Filters Toolbar */}
-      <div style={s.filterBar}>
-        <div style={s.searchWrap}>
-          <input
-            style={s.searchInput}
-            type="text"
-            placeholder="Buscar por título, local, responsável ou descrição..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          {search && (
-            <button style={s.clearSearchBtn} onClick={() => setSearch('')}>✕</button>
-          )}
-        </div>
-
-        <div style={s.filterGroup}>
-          <select
-            style={s.filterSelect}
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="abertas">Em Aberto</option>
-            <option value="proximas">Próximos 7 Dias</option>
-            <option value="alta">Alta Prioridade</option>
-            <option value="concluidas">Concluídas</option>
-            <option value="todas">Todas as Atividades</option>
-          </select>
-
-          <select
-            style={s.filterSelect}
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-          >
-            <option value="">Todas as Categorias</option>
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {/* Activity List */}
-      {loading ? (
-        <div style={s.emptyState}>Carregando atividades da agenda...</div>
-      ) : filteredActivities.length === 0 ? (
-        <div style={s.emptyState}>
-          <p style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-primary)' }}>Nenhuma atividade encontrada</p>
-          <p style={{ color: 'var(--text-muted)', marginTop: 6 }}>
-            {search || categoryFilter || statusFilter !== 'abertas'
-              ? 'Tente ajustar os filtros ou termo de busca acima.'
-              : 'Clique em "+ Nova Atividade" para agendar o primeiro evento da equipe.'}
-          </p>
-        </div>
-      ) : (
-        <div style={s.activityList}>
-          {filteredActivities.map((act) => {
-            const relDay = getRelativeDayLabel(act.data);
-            const prioInfo = PRIORITIES.find((p) => p.value === act.prioridade) || PRIORITIES[1];
-            const isMeetLink = act.local && (act.local.startsWith('http://') || act.local.startsWith('https://'));
-
-            return (
-              <div
-                key={act._id}
-                style={{
-                  ...s.activityCard,
-                  ...(act.concluida ? s.activityCardCompleted : {}),
-                }}
-              >
-                {/* Left/Main Column */}
-                <div style={s.activityMain}>
-                  <div style={s.activityTopRow}>
-                    <span style={s.categoryBadge}>{act.categoria}</span>
+          {/* Categorias / Agendas */}
+          <div style={s.sidebarSection}>
+            <div style={s.sidebarSectionHeaderRow}>
+              <span style={s.sidebarSectionHeader}>Minhas Agendas</span>
+              <button style={s.sidebarLinkBtn} onClick={selectAllCategories}>
+                Todas
+              </button>
+            </div>
+            <div style={s.categoryFilterList}>
+              {CATEGORIES.map((cat) => {
+                const color = getCategoryColor(cat);
+                const isChecked = activeCategories.has(cat);
+                return (
+                  <label key={cat} style={s.categoryCheckItem}>
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleCategory(cat)}
+                      style={{ accentColor: color.bg }}
+                    />
                     <span
                       style={{
-                        ...s.priorityBadge,
-                        color: prioInfo.color,
-                        background: prioInfo.bg,
+                        ...s.categoryDot,
+                        backgroundColor: color.bg,
                       }}
-                    >
-                      Prioridade {prioInfo.label}
-                    </span>
-                    {relDay && (
-                      <span
-                        style={{
-                          ...s.dayBadge,
-                          background: relDay.badgeColor,
-                        }}
-                      >
-                        {relDay.label}
-                      </span>
-                    )}
-                    {act.concluida && <span style={s.completedBadge}>✓ Concluída</span>}
+                    />
+                    <span style={s.categoryCheckLabel}>{cat}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        </aside>
+
+        {/* Main Calendar View Area */}
+        <main style={s.gCalMain}>
+          {loading ? (
+            <div style={s.loadingBox}>Carregando agenda...</div>
+          ) : viewMode === 'mes' ? (
+            /* ── Visualização: Grade de Mês ── */
+            <div style={s.monthViewWrapper}>
+              {/* Cabeçalho dos dias da semana */}
+              <div style={s.monthHeaderGrid}>
+                {WEEKDAYS.map((wd, i) => (
+                  <div key={i} style={s.monthHeaderCell}>
+                    {wd.toUpperCase()}
                   </div>
+                ))}
+              </div>
 
-                  <h3 style={{ ...s.activityTitle, textDecoration: act.concluida ? 'line-through' : 'none' }}>
-                    {act.titulo}
-                  </h3>
+              {/* Grade de dias do mês */}
+              <div style={s.monthGrid}>
+                {monthDaysGrid.map(({ date, isCurrentMonth, dayNum }, idx) => {
+                  const dateKey = formatDateISO(date);
+                  const isToday = dateKey === todayStr;
+                  const dayEvents = activitiesByDate[dateKey] || [];
 
-                  {/* Meta Details (Date, Time, Location, Leader) */}
-                  <div style={s.metaGrid}>
-                    <div style={s.metaItem}>
-                      <span style={s.metaLabel}>Data:</span>
-                      <span>{formatDateDisplay(act.data)}</span>
-                      {act.hora && <span style={s.metaSub}>às {act.hora}</span>}
-                    </div>
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        ...s.monthCell,
+                        ...(isCurrentMonth ? {} : s.monthCellOtherMonth),
+                        ...(isToday ? s.monthCellToday : {}),
+                      }}
+                      onClick={() => handleOpenCreate(date)}
+                    >
+                      <div style={s.monthCellTop}>
+                        <span
+                          style={{
+                            ...s.monthDayNumber,
+                            ...(isToday ? s.monthDayNumberToday : {}),
+                            ...(isCurrentMonth ? {} : s.monthDayNumberMuted),
+                          }}
+                        >
+                          {dayNum}
+                        </span>
+                      </div>
 
-                    {act.local && (
-                      <div style={s.metaItem}>
-                        <span style={s.metaLabel}>Local:</span>
-                        {isMeetLink ? (
-                          <a
-                            href={act.local}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={s.link}
+                      {/* Lista de Eventos no Dia */}
+                      <div style={s.monthCellEvents}>
+                        {dayEvents.slice(0, 3).map((act) => {
+                          const catColor = getCategoryColor(act.categoria);
+                          return (
+                            <div
+                              key={act._id}
+                              style={{
+                                ...s.eventChip,
+                                backgroundColor: catColor.bg,
+                                color: catColor.text,
+                                opacity: act.concluida ? 0.5 : 1,
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDetailsEvent(act);
+                              }}
+                              title={`${act.hora ? act.hora + ' - ' : ''}${act.titulo}`}
+                            >
+                              <span style={s.eventChipTime}>{act.hora || '•'}</span>
+                              <span style={s.eventChipTitle}>{act.titulo}</span>
+                            </div>
+                          );
+                        })}
+
+                        {dayEvents.length > 3 && (
+                          <div
+                            style={s.moreEventsPill}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewDate(date);
+                              setViewMode('agenda');
+                            }}
                           >
-                            Abrir Link / Reunião
-                          </a>
-                        ) : (
-                          <span>{act.local}</span>
+                            +{dayEvents.length - 3} mais
+                          </div>
                         )}
                       </div>
-                    )}
-
-                    {act.responsavel && (
-                      <div style={s.metaItem}>
-                        <span style={s.metaLabel}>Responsável:</span>
-                        <span>{act.responsavel}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  {act.descricao && (
-                    <div style={s.activityDesc}>
-                      {act.descricao}
                     </div>
-                  )}
-
-                  {/* Notification Status Banner */}
-                  <div style={s.notifStatus}>
-                    {act.notificarEmail ? (
-                      act.notificacaoEnviada ? (
-                        <span style={{ color: '#10b981', fontSize: 12 }}>
-                          Lembrete enviado por e-mail aos membros ativos
-                          {act.notificadoEm && ` em ${new Date(act.notificadoEm).toLocaleString('pt-BR')}`}
-                        </span>
-                      ) : (
-                        <span style={{ color: '#f59e0b', fontSize: 12 }}>
-                          Notificação por e-mail agendada (disparo automático 1 dia antes às 08:00)
-                        </span>
-                      )
-                    ) : (
-                      <span style={{ color: '#6b7280', fontSize: 12 }}>
-                        Notificação por e-mail desativada para este evento
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right Action Column */}
-                <div style={s.activityActions}>
-                  <button
-                    style={act.concluida ? s.reopenBtn : s.completeBtn}
-                    onClick={() => handleToggleComplete(act)}
-                    title={act.concluida ? 'Reabrir atividade' : 'Marcar como concluída'}
-                  >
-                    {act.concluida ? 'Reabrir' : 'Concluir'}
-                  </button>
-
-                  <button
-                    style={s.emailBtn}
-                    onClick={() => handleSendReminder(act)}
-                    title="Dispara e-mail de lembrete agora para todos os membros ativos"
-                  >
-                    Disparar E-mail
-                  </button>
-
-                  <button
-                    style={s.editBtn}
-                    onClick={() => setModalItem(act)}
-                    title="Editar atividade"
-                  >
-                    Editar
-                  </button>
-
-                  {isAdmin && (
-                    <button
-                      style={s.deleteBtn}
-                      onClick={() => handleDelete(act)}
-                      title="Excluir atividade"
-                    >
-                      Excluir
-                    </button>
-                  )}
-                </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          ) : viewMode === 'semana' ? (
+            /* ── Visualização: Grade de Semana ── */
+            <div style={s.weekViewWrapper}>
+              <div style={s.weekHeaderGrid}>
+                {weekDays.map((d, i) => {
+                  const dateKey = formatDateISO(d);
+                  const isToday = dateKey === todayStr;
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        ...s.weekHeaderCell,
+                        ...(isToday ? s.weekHeaderCellToday : {}),
+                      }}
+                    >
+                      <div style={s.weekHeaderWeekday}>{WEEKDAYS[d.getDay()]}</div>
+                      <div
+                        style={{
+                          ...s.weekHeaderDayNum,
+                          ...(isToday ? s.weekHeaderDayNumToday : {}),
+                        }}
+                      >
+                        {d.getDate()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={s.weekColumnsGrid}>
+                {weekDays.map((d, i) => {
+                  const dateKey = formatDateISO(d);
+                  const isToday = dateKey === todayStr;
+                  const dayEvents = activitiesByDate[dateKey] || [];
+
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        ...s.weekColumn,
+                        ...(isToday ? s.weekColumnToday : {}),
+                      }}
+                      onClick={() => handleOpenCreate(d)}
+                    >
+                      {dayEvents.length === 0 ? (
+                        <div style={s.weekEmptyCol}>Clique para agendar</div>
+                      ) : (
+                        dayEvents.map((act) => {
+                          const catColor = getCategoryColor(act.categoria);
+                          return (
+                            <div
+                              key={act._id}
+                              style={{
+                                ...s.weekEventCard,
+                                borderLeftColor: catColor.bg,
+                                backgroundColor: catColor.lightBg,
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDetailsEvent(act);
+                              }}
+                            >
+                              <div style={s.weekEventTime}>{act.hora || 'Horário flexível'}</div>
+                              <div style={s.weekEventTitle}>{act.titulo}</div>
+                              {act.local && <div style={s.weekEventSub}>{act.local}</div>}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            /* ── Visualização: Agenda / Lista Cronológica ── */
+            <div style={s.agendaViewWrapper}>
+              {filteredActivities.length === 0 ? (
+                <div style={s.agendaEmpty}>
+                  Nenhuma atividade encontrada com os filtros selecionados.
+                </div>
+              ) : (
+                <div style={s.agendaList}>
+                  {filteredActivities.map((act) => {
+                    const catColor = getCategoryColor(act.categoria);
+                    const prio = PRIORITIES.find((p) => p.value === act.prioridade) || PRIORITIES[1];
+                    const actDate = new Date(act.data);
+                    const isMeet = act.local && (act.local.startsWith('http://') || act.local.startsWith('https://'));
+
+                    return (
+                      <div
+                        key={act._id}
+                        style={{
+                          ...s.agendaCard,
+                          borderLeftColor: catColor.bg,
+                          opacity: act.concluida ? 0.6 : 1,
+                        }}
+                        onClick={() => setDetailsEvent(act)}
+                      >
+                        <div style={s.agendaCardDateCol}>
+                          <div style={s.agendaCardDayNumber}>{actDate.getDate()}</div>
+                          <div style={s.agendaCardMonth}>
+                            {MONTHS[actDate.getMonth()]?.slice(0, 3)}
+                          </div>
+                          <div style={s.agendaCardWeekday}>{WEEKDAYS[actDate.getDay()]}</div>
+                        </div>
+
+                        <div style={s.agendaCardContent}>
+                          <div style={s.agendaCardTopRow}>
+                            <span
+                              style={{
+                                ...s.categoryPill,
+                                backgroundColor: catColor.lightBg,
+                                color: catColor.bg,
+                              }}
+                            >
+                              {act.categoria}
+                            </span>
+                            <span style={{ ...s.priorityText, color: prio.color }}>
+                              Prioridade {prio.label}
+                            </span>
+                            {act.concluida && <span style={s.completedTag}>Concluída</span>}
+                          </div>
+
+                          <h3 style={s.agendaCardTitle}>{act.titulo}</h3>
+
+                          <div style={s.agendaCardMeta}>
+                            {act.hora && <span>Horário: {act.hora}</span>}
+                            {act.local && (
+                              <span>
+                                Local: {isMeet ? 'Link Online (Meet)' : act.local}
+                              </span>
+                            )}
+                            {act.responsavel && <span>Resp.: {act.responsavel}</span>}
+                          </div>
+
+                          {act.descricao && (
+                            <div style={s.agendaCardDesc}>{act.descricao}</div>
+                          )}
+                        </div>
+
+                        <div style={s.agendaCardActions}>
+                          <button
+                            style={s.agendaActionBtn}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSendTestEmail(act);
+                            }}
+                          >
+                            Disparar E-mail
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* ── Modais ── */}
+      {detailsEvent && (
+        <EventDetailsModal
+          event={detailsEvent}
+          onClose={() => setDetailsEvent(null)}
+          onEdit={(e) => {
+            setDetailsEvent(null);
+            setFormModalItem(e);
+          }}
+          onDelete={(e) => handleDelete(e)}
+          onToggleComplete={(e) => handleToggleComplete(e)}
+          onSendTest={(e) => handleSendTestEmail(e)}
+        />
       )}
 
-      {/* Modal */}
-      {modalItem && (
-        <ActivityModal
-          item={modalItem === 'new' ? null : modalItem}
-          onClose={() => setModalItem(null)}
+      {formModalItem && (
+        <EventFormModal
+          item={formModalItem === 'new' ? null : formModalItem}
+          initialDate={formInitialDate}
+          onClose={() => {
+            setFormModalItem(null);
+            setFormInitialDate(null);
+          }}
           onSaved={() => {
-            setModalItem(null);
+            setFormModalItem(null);
+            setFormInitialDate(null);
             fetchActivities();
           }}
         />
@@ -691,315 +1130,600 @@ export default function ActivitiesPage() {
   );
 }
 
-// ── Estilos Dark Theme ─────────────────────────────────────────
+// ── Estilos Google Agenda (Dark Theme) ────────────────────────
 const s = {
-  container: {
-    maxWidth: 1200,
-    margin: '0 auto',
-    padding: '24px 16px',
-  },
-  pageHeader: {
+  googleAgendaWrapper: {
     display: 'flex',
+    flexDirection: 'column',
+    height: 'calc(100vh - 120px)',
+    minHeight: 650,
+    background: 'var(--bg)',
+    color: 'var(--text-primary)',
+    margin: '-16px -16px 0 -16px',
+    overflow: 'hidden',
+  },
+
+  // ── Header Superior ──
+  gCalHeader: {
+    display: 'flex',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    padding: '12px 20px',
+    borderBottom: '1px solid var(--border)',
+    background: 'var(--card-bg)',
     gap: 16,
     flexWrap: 'wrap',
-    marginBottom: 24,
+    flexShrink: 0,
   },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: 700,
-    color: 'var(--text-primary)',
-    margin: 0,
-  },
-  pageSubtitle: {
-    fontSize: 14,
-    color: 'var(--text-muted)',
-    marginTop: 6,
-    marginBottom: 0,
-    maxWidth: 680,
-  },
-  headerActions: {
+  headerLeft: {
     display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  },
+  todayBtn: {
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    color: 'var(--text-primary)',
+    padding: '7px 14px',
+    borderRadius: 'var(--radius)',
+    fontSize: 13,
+    fontWeight: 500,
+    cursor: 'pointer',
+    transition: 'background 0.15s',
+  },
+  navArrows: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+  },
+  arrowBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-primary)',
+    fontSize: 20,
+    width: 32,
+    height: 32,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+  },
+  currentMonthTitle: {
+    fontSize: 18,
+    fontWeight: 600,
+    margin: 0,
+    color: 'var(--text-primary)',
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
     gap: 10,
     flexWrap: 'wrap',
   },
-  primaryBtn: {
-    background: '#10b981',
-    color: '#fff',
-    border: 'none',
-    padding: '10px 18px',
-    borderRadius: 'var(--radius)',
-    fontSize: 14,
-    fontWeight: 600,
-    cursor: 'pointer',
-    transition: 'background 0.2s',
-  },
-  secondaryBtn: {
-    background: 'var(--card-bg)',
-    color: 'var(--text-primary)',
-    border: '1px solid var(--border)',
-    padding: '10px 16px',
-    borderRadius: 'var(--radius)',
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: 'pointer',
-  },
-  kpiGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: 16,
-    marginBottom: 24,
-  },
-  kpiCard: {
-    background: 'var(--card-bg)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--radius)',
-    padding: '18px 20px',
-    cursor: 'pointer',
-    transition: 'transform 0.15s, border-color 0.15s',
-  },
-  kpiValue: {
-    fontSize: 28,
-    fontWeight: 700,
-    color: 'var(--text-primary)',
-  },
-  kpiLabel: {
-    fontSize: 13,
-    color: 'var(--text-muted)',
-    marginTop: 4,
-    fontWeight: 500,
-  },
-  kpiIndicator: {
-    fontSize: 11,
-    fontWeight: 600,
-    marginTop: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  filterBar: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    flexWrap: 'wrap',
-    marginBottom: 20,
-  },
-  searchWrap: {
+  searchBox: {
     position: 'relative',
-    flex: '1 1 300px',
+    width: 220,
   },
   searchInput: {
     width: '100%',
-    background: 'var(--card-bg)',
+    background: 'var(--bg)',
     border: '1px solid var(--border)',
     color: 'var(--text-primary)',
-    padding: '10px 14px',
-    paddingRight: 32,
+    padding: '7px 12px',
     borderRadius: 'var(--radius)',
-    fontSize: 14,
+    fontSize: 13,
     outline: 'none',
   },
   clearSearchBtn: {
     position: 'absolute',
-    right: 10,
+    right: 8,
     top: '50%',
     transform: 'translateY(-50%)',
     background: 'transparent',
     border: 'none',
     color: 'var(--text-muted)',
     cursor: 'pointer',
-    fontSize: 12,
+    fontSize: 11,
   },
-  filterGroup: {
+  viewToggleGroup: {
     display: 'flex',
-    gap: 10,
-    flexWrap: 'wrap',
-  },
-  filterSelect: {
-    background: 'var(--card-bg)',
     border: '1px solid var(--border)',
-    color: 'var(--text-primary)',
-    padding: '10px 14px',
     borderRadius: 'var(--radius)',
-    fontSize: 13,
-    outline: 'none',
+    overflow: 'hidden',
+  },
+  viewToggleBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-muted)',
+    padding: '7px 12px',
+    fontSize: 12,
+    fontWeight: 500,
     cursor: 'pointer',
   },
-  emptyState: {
-    background: 'var(--card-bg)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--radius)',
-    padding: '48px 24px',
-    textAlign: 'center',
+  viewToggleBtnActive: {
+    background: 'var(--border)',
+    color: 'var(--text-primary)',
+    fontWeight: 600,
   },
-  activityList: {
+  tomorrowCheckBtn: {
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    color: 'var(--text-muted)',
+    padding: '7px 12px',
+    borderRadius: 'var(--radius)',
+    fontSize: 12,
+    cursor: 'pointer',
+  },
+  gCalCreateBtn: {
+    background: '#0284c7',
+    color: '#ffffff',
+    border: 'none',
+    padding: '8px 16px',
+    borderRadius: 20,
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: 'pointer',
+    boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)',
+  },
+
+  // ── Corpo da Agenda ──
+  gCalBody: {
+    display: 'flex',
+    flex: 1,
+    overflow: 'hidden',
+  },
+
+  // ── Sidebar Lateral ──
+  gCalSidebar: {
+    width: 260,
+    minWidth: 240,
+    borderRight: '1px solid var(--border)',
+    background: 'var(--card-bg)',
+    padding: '16px',
+    overflowY: 'auto',
     display: 'flex',
     flexDirection: 'column',
-    gap: 14,
+    gap: 20,
+    flexShrink: 0,
   },
-  activityCard: {
-    background: 'var(--card-bg)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--radius)',
-    padding: '18px 20px',
+  sidebarSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+  },
+  sidebarSectionHeaderRow: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    gap: 20,
-    flexWrap: 'wrap',
-    transition: 'border-color 0.2s',
+    alignItems: 'center',
   },
-  activityCardCompleted: {
-    opacity: 0.65,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+  sidebarSectionHeader: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
-  activityMain: {
-    flex: '1 1 500px',
+  sidebarLinkBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: '#0284c7',
+    fontSize: 11,
+    cursor: 'pointer',
+  },
+  kpiMiniGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: 8,
+  },
+  kpiMiniCard: {
+    background: 'var(--bg)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    padding: '8px 10px',
+  },
+  kpiMiniVal: {
+    fontSize: 18,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+  },
+  kpiMiniLbl: {
+    fontSize: 11,
+    color: 'var(--text-muted)',
+    marginTop: 2,
+  },
+  categoryFilterList: {
     display: 'flex',
     flexDirection: 'column',
     gap: 8,
   },
-  activityTopRow: {
+  categoryCheckItem: {
     display: 'flex',
     alignItems: 'center',
     gap: 8,
-    flexWrap: 'wrap',
-  },
-  categoryBadge: {
-    fontSize: 11,
-    fontWeight: 600,
-    background: 'rgba(255, 255, 255, 0.08)',
+    fontSize: 13,
+    cursor: 'pointer',
     color: 'var(--text-primary)',
-    padding: '3px 8px',
-    borderRadius: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
   },
-  priorityBadge: {
+  categoryDot: {
+    width: 10,
+    height: 10,
+    borderRadius: '50%',
+    flexShrink: 0,
+  },
+  categoryCheckLabel: {
+    flex: 1,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+
+  // ── Mini Calendário ──
+  miniCal: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  miniCalWeekdays: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(7, 1fr)',
+    textAlign: 'center',
+  },
+  miniCalWeekday: {
     fontSize: 11,
     fontWeight: 600,
-    padding: '3px 8px',
-    borderRadius: 4,
+    color: 'var(--text-muted)',
   },
-  dayBadge: {
+  miniCalGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(7, 1fr)',
+    gap: 2,
+  },
+  miniCalCellEmpty: {
+    height: 26,
+  },
+  miniCalCell: {
+    height: 26,
+    background: 'transparent',
+    border: 'none',
+    borderRadius: '50%',
+    color: 'var(--text-primary)',
+    fontSize: 11,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  miniCalCellToday: {
+    border: '1px solid #0284c7',
+    fontWeight: 700,
+    color: '#0284c7',
+  },
+  miniCalCellSelected: {
+    background: '#0284c7',
+    color: '#ffffff',
+    fontWeight: 700,
+  },
+
+  // ── Área Principal do Calendário ──
+  gCalMain: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    background: 'var(--bg)',
+  },
+  loadingBox: {
+    padding: 40,
+    textAlign: 'center',
+    color: 'var(--text-muted)',
+    fontSize: 14,
+  },
+
+  // ── Grade Mensal (Month View) ──
+  monthViewWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    overflow: 'hidden',
+  },
+  monthHeaderGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(7, 1fr)',
+    borderBottom: '1px solid var(--border)',
+    background: 'var(--card-bg)',
+    flexShrink: 0,
+  },
+  monthHeaderCell: {
+    padding: '8px 4px',
+    textAlign: 'center',
+    fontSize: 11,
+    fontWeight: 600,
+    color: 'var(--text-muted)',
+    letterSpacing: 0.5,
+  },
+  monthGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(7, 1fr)',
+    gridAutoRows: '1fr',
+    flex: 1,
+    overflowY: 'auto',
+  },
+  monthCell: {
+    borderRight: '1px solid var(--border)',
+    borderBottom: '1px solid var(--border)',
+    padding: '6px 6px',
+    minHeight: 100,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    cursor: 'pointer',
+    background: 'var(--bg)',
+    transition: 'background 0.1s',
+  },
+  monthCellOtherMonth: {
+    background: 'rgba(0, 0, 0, 0.18)',
+    opacity: 0.5,
+  },
+  monthCellToday: {
+    background: 'rgba(2, 132, 199, 0.05)',
+  },
+  monthCellTop: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  monthDayNumber: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--text-primary)',
+    width: 24,
+    height: 24,
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthDayNumberToday: {
+    background: '#0284c7',
+    color: '#ffffff',
+    fontWeight: 700,
+  },
+  monthDayNumberMuted: {
+    color: 'var(--text-muted)',
+  },
+  monthCellEvents: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 3,
+    overflow: 'hidden',
+  },
+  eventChip: {
+    fontSize: 11,
+    fontWeight: 500,
+    padding: '2px 6px',
+    borderRadius: 3,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 4,
+    cursor: 'pointer',
+  },
+  eventChipTime: {
+    fontSize: 10,
+    fontWeight: 700,
+    opacity: 0.9,
+  },
+  eventChipTitle: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  moreEventsPill: {
+    fontSize: 10,
+    fontWeight: 600,
+    color: 'var(--text-muted)',
+    padding: '1px 4px',
+    cursor: 'pointer',
+  },
+
+  // ── Grade Semanal (Week View) ──
+  weekViewWrapper: {
+    display: 'flex',
+    flexDirection: 'column',
+    flex: 1,
+    overflow: 'hidden',
+  },
+  weekHeaderGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(7, 1fr)',
+    borderBottom: '1px solid var(--border)',
+    background: 'var(--card-bg)',
+    flexShrink: 0,
+  },
+  weekHeaderCell: {
+    padding: '10px 4px',
+    textAlign: 'center',
+    borderRight: '1px solid var(--border)',
+  },
+  weekHeaderCellToday: {
+    background: 'rgba(2, 132, 199, 0.08)',
+  },
+  weekHeaderWeekday: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+  },
+  weekHeaderDayNum: {
+    fontSize: 18,
+    fontWeight: 700,
+    marginTop: 4,
+    color: 'var(--text-primary)',
+  },
+  weekHeaderDayNumToday: {
+    color: '#0284c7',
+  },
+  weekColumnsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(7, 1fr)',
+    flex: 1,
+    overflowY: 'auto',
+  },
+  weekColumn: {
+    borderRight: '1px solid var(--border)',
+    padding: '8px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    cursor: 'pointer',
+  },
+  weekColumnToday: {
+    background: 'rgba(2, 132, 199, 0.03)',
+  },
+  weekEmptyCol: {
+    fontSize: 11,
+    color: 'var(--text-muted)',
+    opacity: 0.4,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  weekEventCard: {
+    borderLeft: '4px solid #0284c7',
+    borderRadius: 'var(--radius)',
+    padding: '8px 10px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+    cursor: 'pointer',
+  },
+  weekEventTime: {
     fontSize: 11,
     fontWeight: 700,
-    color: '#fff',
-    padding: '3px 8px',
-    borderRadius: 4,
+    color: 'var(--text-primary)',
   },
-  completedBadge: {
-    fontSize: 11,
-    fontWeight: 600,
-    background: 'rgba(16, 185, 129, 0.2)',
-    color: '#10b981',
-    padding: '3px 8px',
-    borderRadius: 4,
-  },
-  activityTitle: {
-    fontSize: 17,
+  weekEventTitle: {
+    fontSize: 13,
     fontWeight: 600,
     color: 'var(--text-primary)',
-    margin: '2px 0 4px 0',
   },
-  metaGrid: {
+  weekEventSub: {
+    fontSize: 11,
+    color: 'var(--text-muted)',
+  },
+
+  // ── Agenda / Lista Cronológica ──
+  agendaViewWrapper: {
+    flex: 1,
+    overflowY: 'auto',
+    padding: '20px',
+  },
+  agendaEmpty: {
+    textAlign: 'center',
+    padding: '40px 20px',
+    color: 'var(--text-muted)',
+    fontSize: 14,
+  },
+  agendaList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    maxWidth: 900,
+    margin: '0 auto',
+  },
+  agendaCard: {
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border)',
+    borderLeft: '5px solid #0284c7',
+    borderRadius: 'var(--radius)',
+    padding: '14px 18px',
     display: 'flex',
     alignItems: 'center',
     gap: 16,
-    flexWrap: 'wrap',
-    fontSize: 13,
-    color: 'var(--text-muted)',
+    cursor: 'pointer',
   },
-  metaItem: {
+  agendaCardDateCol: {
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
-    gap: 6,
+    minWidth: 50,
+    borderRight: '1px solid var(--border)',
+    paddingRight: 14,
   },
-  metaLabel: {
-    fontSize: 12,
-    fontWeight: 600,
-    color: 'var(--text-muted)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  metaSub: {
+  agendaCardDayNumber: {
+    fontSize: 22,
+    fontWeight: 700,
     color: 'var(--text-primary)',
-    fontWeight: 500,
   },
-  link: {
-    color: '#3b82f6',
-    textDecoration: 'underline',
+  agendaCardMonth: {
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    color: '#0284c7',
   },
-  activityDesc: {
-    fontSize: 13,
+  agendaCardWeekday: {
+    fontSize: 11,
     color: 'var(--text-muted)',
-    lineHeight: 1.5,
-    marginTop: 4,
-    whiteSpace: 'pre-wrap',
   },
-  notifStatus: {
-    marginTop: 6,
-    paddingTop: 8,
-    borderTop: '1px dashed var(--border)',
-  },
-  activityActions: {
+  agendaCardContent: {
+    flex: 1,
     display: 'flex',
-    flexDirection: 'row',
+    flexDirection: 'column',
+    gap: 4,
+  },
+  agendaCardTopRow: {
+    display: 'flex',
     alignItems: 'center',
     gap: 8,
-    flexWrap: 'wrap',
   },
-  completeBtn: {
-    background: 'rgba(16, 185, 129, 0.15)',
+  categoryPill: {
+    fontSize: 11,
+    fontWeight: 600,
+    padding: '2px 8px',
+    borderRadius: 4,
+  },
+  priorityText: {
+    fontSize: 11,
+    fontWeight: 600,
+  },
+  completedTag: {
+    fontSize: 11,
     color: '#10b981',
-    border: '1px solid rgba(16, 185, 129, 0.3)',
-    padding: '6px 12px',
-    borderRadius: 'var(--radius)',
-    fontSize: 12,
     fontWeight: 600,
-    cursor: 'pointer',
   },
-  reopenBtn: {
-    background: 'rgba(107, 114, 128, 0.15)',
-    color: '#9ca3af',
-    border: '1px solid rgba(107, 114, 128, 0.3)',
-    padding: '6px 12px',
-    borderRadius: 'var(--radius)',
-    fontSize: 12,
+  agendaCardTitle: {
+    fontSize: 16,
     fontWeight: 600,
-    cursor: 'pointer',
-  },
-  emailBtn: {
-    background: 'rgba(59, 130, 246, 0.12)',
-    color: '#60a5fa',
-    border: '1px solid rgba(59, 130, 246, 0.25)',
-    padding: '6px 12px',
-    borderRadius: 'var(--radius)',
-    fontSize: 12,
-    fontWeight: 500,
-    cursor: 'pointer',
-  },
-  editBtn: {
-    background: 'transparent',
+    margin: '2px 0',
     color: 'var(--text-primary)',
-    border: '1px solid var(--border)',
-    padding: '6px 12px',
-    borderRadius: 'var(--radius)',
-    fontSize: 12,
-    cursor: 'pointer',
   },
-  deleteBtn: {
-    background: 'rgba(239, 68, 68, 0.12)',
-    color: '#f87171',
-    border: '1px solid rgba(239, 68, 68, 0.25)',
+  agendaCardMeta: {
+    display: 'flex',
+    gap: 14,
+    fontSize: 12,
+    color: 'var(--text-muted)',
+  },
+  agendaCardDesc: {
+    fontSize: 12,
+    color: 'var(--text-muted)',
+    marginTop: 4,
+  },
+  agendaCardActions: {
+    display: 'flex',
+    alignItems: 'center',
+  },
+  agendaActionBtn: {
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    color: 'var(--text-primary)',
     padding: '6px 12px',
     borderRadius: 'var(--radius)',
     fontSize: 12,
     cursor: 'pointer',
   },
 
-  // Modal
+  // ── Modais ──
   overlay: {
     position: 'fixed',
     inset: 0,
@@ -1010,33 +1734,165 @@ const s = {
     padding: 16,
     zIndex: 1000,
   },
-  modal: {
+  detailsModal: {
     background: 'var(--card-bg)',
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius)',
     width: '100%',
-    maxWidth: 620,
-    maxHeight: '90vh',
-    overflowY: 'auto',
-    padding: 24,
+    maxWidth: 520,
+    overflow: 'hidden',
+    boxShadow: '0 12px 30px rgba(0, 0, 0, 0.5)',
   },
-  modalHeader: {
+  detailsHeaderBar: {
+    padding: '12px 18px',
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
+    alignItems: 'center',
+    color: '#ffffff',
   },
-  modalSubTitle: {
+  detailsHeaderCategory: {
+    fontSize: 12,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  detailsCloseBtn: {
+    background: 'transparent',
+    border: 'none',
+    color: '#ffffff',
+    fontSize: 16,
+    cursor: 'pointer',
+  },
+  detailsContent: {
+    padding: '20px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 14,
+  },
+  detailsTopRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  },
+  priorityPill: {
     fontSize: 11,
-    fontWeight: 700,
-    color: 'var(--text-muted)',
-    letterSpacing: 0.8,
+    fontWeight: 600,
+    padding: '2px 8px',
+    borderRadius: 4,
+    border: '1px solid',
   },
-  modalTitle: {
-    fontSize: 20,
+  completedPill: {
+    fontSize: 11,
+    fontWeight: 600,
+    background: 'rgba(16, 185, 129, 0.2)',
+    color: '#10b981',
+    padding: '2px 8px',
+    borderRadius: 4,
+  },
+  detailsTitle: {
+    fontSize: 19,
     fontWeight: 700,
+    margin: 0,
     color: 'var(--text-primary)',
-    margin: '4px 0 0 0',
+  },
+  detailsSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    borderTop: '1px solid var(--border)',
+    borderBottom: '1px solid var(--border)',
+    padding: '12px 0',
+  },
+  detailsRow: {
+    display: 'flex',
+    gap: 8,
+    fontSize: 13,
+  },
+  detailsLabel: {
+    fontWeight: 600,
+    color: 'var(--text-muted)',
+    minWidth: 90,
+  },
+  detailsValue: {
+    color: 'var(--text-primary)',
+    flex: 1,
+  },
+  meetLink: {
+    color: '#0284c7',
+    textDecoration: 'underline',
+  },
+  detailsDescBox: {
+    marginTop: 4,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 4,
+  },
+  detailsDescText: {
+    fontSize: 13,
+    color: 'var(--text-muted)',
+    background: 'var(--bg)',
+    padding: '10px 12px',
+    borderRadius: 'var(--radius)',
+    whiteSpace: 'pre-wrap',
+  },
+  detailsActions: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+    gap: 8,
+    flexWrap: 'wrap',
+    marginTop: 4,
+  },
+  actionBtnSecondary: {
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    color: 'var(--text-primary)',
+    padding: '7px 12px',
+    borderRadius: 'var(--radius)',
+    fontSize: 12,
+    cursor: 'pointer',
+  },
+  actionBtnEmail: {
+    background: '#0284c7',
+    border: 'none',
+    color: '#ffffff',
+    padding: '7px 12px',
+    borderRadius: 'var(--radius)',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  actionBtnDanger: {
+    background: 'rgba(239, 68, 68, 0.12)',
+    border: '1px solid rgba(239, 68, 68, 0.3)',
+    color: '#ef4444',
+    padding: '7px 12px',
+    borderRadius: 'var(--radius)',
+    fontSize: 12,
+    cursor: 'pointer',
+  },
+
+  // ── Modal de Formulário ──
+  formModal: {
+    background: 'var(--card-bg)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius)',
+    width: '100%',
+    maxWidth: 580,
+    maxHeight: '90vh',
+    overflowY: 'auto',
+    padding: '24px',
+  },
+  formHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  formTitle: {
+    fontSize: 18,
+    fontWeight: 700,
+    margin: 0,
+    color: 'var(--text-primary)',
   },
   closeBtn: {
     background: 'transparent',
@@ -1048,7 +1904,7 @@ const s = {
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: 16,
+    gap: 14,
   },
   formRow: {
     display: 'grid',
@@ -1060,37 +1916,39 @@ const s = {
     flexDirection: 'column',
     gap: 6,
   },
-  label: {
-    fontSize: 13,
-    fontWeight: 500,
-    color: 'var(--text-primary)',
+  formLabel: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
-  input: {
+  formInput: {
     background: 'var(--bg)',
     border: '1px solid var(--border)',
     color: 'var(--text-primary)',
-    padding: '10px 12px',
+    padding: '9px 12px',
     borderRadius: 'var(--radius)',
     fontSize: 14,
     outline: 'none',
   },
-  select: {
+  formSelect: {
     background: 'var(--bg)',
     border: '1px solid var(--border)',
     color: 'var(--text-primary)',
-    padding: '10px 12px',
+    padding: '9px 12px',
     borderRadius: 'var(--radius)',
     fontSize: 14,
     outline: 'none',
     cursor: 'pointer',
   },
-  textarea: {
+  formTextarea: {
     background: 'var(--bg)',
     border: '1px solid var(--border)',
     color: 'var(--text-primary)',
-    padding: '10px 12px',
+    padding: '9px 12px',
     borderRadius: 'var(--radius)',
-    fontSize: 14,
+    fontSize: 13,
     outline: 'none',
     resize: 'vertical',
   },
@@ -1104,34 +1962,34 @@ const s = {
   },
   checkbox: {
     marginTop: 2,
-    accentColor: '#10b981',
+    accentColor: '#0284c7',
   },
   checkboxSub: {
     color: 'var(--text-muted)',
     fontSize: 12,
   },
-  modalFooter: {
+  formFooter: {
     display: 'flex',
     justifyContent: 'flex-end',
-    gap: 12,
-    marginTop: 12,
+    gap: 10,
+    marginTop: 10,
   },
   cancelBtn: {
     background: 'transparent',
     border: '1px solid var(--border)',
     color: 'var(--text-muted)',
-    padding: '10px 16px',
+    padding: '9px 16px',
     borderRadius: 'var(--radius)',
     fontSize: 13,
     cursor: 'pointer',
   },
   submitBtn: {
-    background: '#10b981',
+    background: '#0284c7',
     border: 'none',
-    color: '#fff',
-    padding: '10px 20px',
+    color: '#ffffff',
+    padding: '9px 18px',
     borderRadius: 'var(--radius)',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 600,
     cursor: 'pointer',
   },
