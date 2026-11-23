@@ -293,4 +293,26 @@ export const updateImportantContact = (id, data) =>
 export const deleteImportantContact = (id) =>
   api.delete(`/contacts/${id}`).then((r) => r.data);
 
+// ─── Atividades / Agenda e Lembretes ──────────────────────────
+export const getActivities = (params = {}) =>
+  api.get('/activities', { params }).then((r) => r.data);
+
+export const createActivity = (data) =>
+  api.post('/activities', data).then((r) => r.data);
+
+export const updateActivity = (id, data) =>
+  api.put(`/activities/${id}`, data).then((r) => r.data);
+
+export const toggleActivityComplete = (id) =>
+  api.patch(`/activities/${id}/toggle-complete`).then((r) => r.data);
+
+export const sendActivityReminder = (id) =>
+  api.post(`/activities/${id}/send-reminder`).then((r) => r.data);
+
+export const checkTomorrowActivities = () =>
+  api.post('/activities/check-tomorrow').then((r) => r.data);
+
+export const deleteActivity = (id) =>
+  api.delete(`/activities/${id}`).then((r) => r.data);
+
 export default api;

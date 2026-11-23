@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const { startBirthdayCron } = require('./services/birthday');
 const { startMotivationalCron } = require('./services/motivational');
+const { startActivityReminderCron } = require('./services/activityReminder');
 const { seedCategories }   = require('./models/StockCategory');
 const { seedDefaults: seedChargeTypes } = require('./controllers/chargeTypeController');
 
@@ -74,10 +75,12 @@ app.use('/api/logins',       require('./routes/platformCredentials'));
 app.use('/api/charge-types', require('./routes/chargeTypes'));
 app.use('/api/financial',    require('./routes/financial'));
 app.use('/api/contacts',     require('./routes/importantContacts'));
+app.use('/api/activities',   require('./routes/activities'));
 
 // Inicia cron de aniversarios e motivacional semanal (a cada 7 dias)
 startBirthdayCron();
 startMotivationalCron();
+startActivityReminderCron();
 
 // Seeds na primeira vez
 connectDB().then(seedCategories).catch(() => {});

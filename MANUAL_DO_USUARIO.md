@@ -75,7 +75,21 @@ Uma agenda viva com todos os parceiros estratégicos da Microraptor, evitando qu
 
 ---
 
-## 5. Membros
+## 5. Atividades (Agenda da Equipe e Lembretes por E-mail)
+
+### Para que serve?
+É o calendário central e mural de compromissos da Microraptor. Reúne reuniões gerais, workshops, marcos de projeto, entregas de relatórios e competições, com **disparo automático de e-mail de lembrete para todos os membros ativos 1 dia antes do evento**.
+
+### Funcionalidades:
+- **Agendamento Completo:** Título, data, horário, local ou link de reunião online (Google Meet/Zoom), categoria e prioridade (*Alta*, *Média*, *Baixa*).
+- **Lembrete Automático 1 Dia Antes:** O servidor verifica diariamente às 08:00 os eventos agendados para o dia seguinte e envia um e-mail estruturado e moderno para toda a equipe ativa.
+- **Disparo Manual Sob Demanda:** É possível clicar no botão **Disparar E-mail** a qualquer momento para reforçar um compromisso imediatamente.
+- **Painel de Indicadores:** Mostra rapidamente eventos dos próximos 7 dias, atividades em aberto, itens de alta prioridade e histórico de concluídos.
+- **Acompanhamento de Status:** Marque atividades como "Concluída" conforme forem finalizadas, mantendo o histórico de execução da equipe organizado.
+
+---
+
+## 6. Membros
 
 ### Para que serve?
 Cadastro completo de todos os integrantes da equipe (Capitães, Diretores, Membros de Estrutura, Eletrônica, Programação, Marketing e Trainees).
@@ -88,7 +102,7 @@ Cadastro completo de todos os integrantes da equipe (Capitães, Diretores, Membr
 
 ---
 
-## 6. Horários (Disponibilidade da Equipe)
+## 7. Horários (Disponibilidade da Equipe)
 
 ### Para que serve?
 Organizar a grade de horários dos integrantes no laboratório da UFJF para saber quem está disponível em cada turno (Manhã, Tarde, Noite).
@@ -99,7 +113,7 @@ Organizar a grade de horários dos integrantes no laboratório da UFJF para sabe
 
 ---
 
-## 7. Presença (Frequência em Reuniões)
+## 8. Presença (Frequência em Reuniões)
 
 ### Para que serve?
 Acompanhar o comprometimento da equipe nas reuniões gerais e de área.
@@ -111,7 +125,7 @@ Acompanhar o comprometimento da equipe nas reuniões gerais e de área.
 
 ---
 
-## 8. Cantina da Equipe
+## 9. Cantina da Equipe
 
 ### Para que serve?
 Gerenciar o consumo de alimentos, bebidas e lanches da geladeira/armário da sede da equipe, inclusive compras a prazo ("fiado").
@@ -123,7 +137,7 @@ Gerenciar o consumo de alimentos, bebidas e lanches da geladeira/armário da sed
 
 ---
 
-## 9. Estoque de Materiais e Peças
+## 10. Estoque de Materiais e Peças
 
 ### Para que serve?
 Controlar as ferramentas, componentes eletrônicos, baterias, parafusos, filamentos de impressão 3D e motores do laboratório.
@@ -135,7 +149,7 @@ Controlar as ferramentas, componentes eletrônicos, baterias, parafusos, filamen
 
 ---
 
-## 10. Feedbacks (Avaliação 360° e Desempenho)
+## 11. Feedbacks (Avaliação 360° e Desempenho)
 
 ### Para que serve?
 Realizar ciclos semestrais de feedback construtivo entre os membros da equipe para desenvolvimento pessoal e melhoria do clima da equipe.
@@ -147,22 +161,23 @@ Realizar ciclos semestrais de feedback construtivo entre os membros da equipe pa
 
 ---
 
-## 11. Logins e Links Importantes
+## 12. Logins e Links Importantes
 
 ### Para que serve?
 Cofre centralizado com os links oficiais da equipe (Drive, Figma, GitHub, Redes Sociais, Portais de Inscrição da RoboCore e Credenciais compartilhadas da equipe) para que ninguém precise ficar perguntando senhas em grupos de WhatsApp.
 
 ---
 
-## 12. Automações Inteligentes (Funcionam Sozinhas)
+## 13. Automações Inteligentes (Funcionam Sozinhas)
 
 O sistema possui rotinas programadas que rodam automaticamente no servidor:
-1. **Aniversários da Equipe:** Todo dia às 08:00 da manhã, o sistema verifica se algum membro ativo faz aniversário e envia um e-mail comemorativo.
-2. **E-mails Motivacionais Semanais:** A cada 7 dias (toda segunda-feira às 09:00), o sistema envia automaticamente uma mensagem motivacional e de foco para os e-mails de todos os membros ativos. Também é possível fazer envios manuais pela tela de Membros.
+1. **Lembrete de Atividades e Eventos (1 Dia Antes):** Todo dia às 08:00, o sistema busca atividades marcadas para o dia seguinte e envia um e-mail de lembrete com pauta, horário e local para todos os membros ativos.
+2. **Aniversários da Equipe:** Todo dia às 08:00 da manhã, o sistema verifica se algum membro ativo faz aniversário e envia um e-mail comemorativo.
+3. **E-mails Motivacionais Semanais:** A cada 7 dias (toda segunda-feira às 09:00), o sistema envia automaticamente uma mensagem motivacional e de foco para os e-mails de todos os membros ativos. Também é possível fazer envios manuais pela tela de Membros.
 
 ---
 
-## 13. Boas Práticas para as Próximas Gestões
+## 14. Boas Práticas para as Próximas Gestões
 
 1. **Mantenha os registros em dia:** Ao realizar uma compra ou receber um patrocínio, registre no mesmo dia no Fluxo de Caixa.
 2. **Atualize o status dos membros no início de cada semestre:** Mude os membros que saíram para "Inativo" e cadastre os novos trainees.
