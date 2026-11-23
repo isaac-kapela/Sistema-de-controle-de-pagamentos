@@ -65,16 +65,32 @@ function renderTextWithLinks(text) {
 }
 
 function formatDateISO(d) {
+  if (!d) return '';
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
+function parseActivityDate(dateStr) {
+  if (!dateStr) return null;
+  if (dateStr instanceof Date) return dateStr;
+  const match = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return new Date(parseInt(match[1], 10), parseInt(match[2], 10) - 1, parseInt(match[3], 10), 12, 0, 0);
+  }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 function parseActivityDateKey(dateStr) {
   if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return '';
+  const match = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return `${match[1]}-${match[2]}-${match[3]}`;
+  }
+  const d = parseActivityDate(dateStr);
+  if (!d) return '';
   return formatDateISO(d);
 }
 
@@ -134,8 +150,8 @@ function EventDetailsModal({ event, onClose, onEdit, onDelete, onToggleComplete,
   const prio = PRIORITIES.find((p) => p.value === event.prioridade) || PRIORITIES[1];
   const isMeet = event.local && (event.local.startsWith('http://') || event.local.startsWith('https://'));
 
-  const eventDate = new Date(event.data);
-  const dateFormatted = !isNaN(eventDate.getTime())
+  const eventDate = parseActivityDate(event.data);
+  const dateFormatted = eventDate
     ? eventDate.toLocaleDateString('pt-BR', {
         weekday: 'long',
         day: '2-digit',
@@ -309,8 +325,8 @@ function ManualReminderModal({ activities = [], preselectedEvent = null, onClose
     }
   }
 
-  const eventDate = selectedEvent ? new Date(selectedEvent.data) : null;
-  const dateFormatted = eventDate && !isNaN(eventDate.getTime())
+  const eventDate = selectedEvent ? parseActivityDate(selectedEvent.data) : null;
+  const dateFormatted = eventDate
     ? eventDate.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' })
     : '';
 
@@ -335,7 +351,7 @@ function ManualReminderModal({ activities = [], preselectedEvent = null, onClose
             >
               {openActivities.map((act) => (
                 <option key={act._id} value={act._id}>
-                  {act.titulo} ({formatDateISO(new Date(act.data))}{act.hora ? ` às ${act.hora}` : ''})
+                  {act.titulo} ({parseActivityDateKey(act.data)}{act.hora ? ` às ${act.hora}` : ''})
                 </option>
               ))}
             </select>
@@ -426,10 +442,10 @@ function ManualReminderModal({ activities = [], preselectedEvent = null, onClose
 function EventFormModal({ item, initialDate, onClose, onSaved }) {
   const [form, setForm] = useState(() => {
     if (item) {
-      const d = item.data ? new Date(item.data) : new Date();
+      const d = item.data ? parseActivityDate(item.data) : new Date();
       return {
         ...item,
-        data: !isNaN(d.getTime()) ? formatDateISO(d) : '',
+        data: d ? formatDateISO(d) : '',
       };
     }
     return {
@@ -751,7 +767,8 @@ export default function ActivitiesPage() {
 
     const next7Days = open.filter((a) => {
       if (!a.data) return false;
-      const d = new Date(a.data);
+      const d = parseActivityDate(a.data);
+      if (!d) return false;
       const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
       return target >= today && target <= in7;
     });
@@ -1227,7 +1244,7 @@ export default function ActivitiesPage() {
                   {filteredActivities.map((act) => {
                     const catColor = getCategoryColor(act.categoria);
                     const prio = PRIORITIES.find((p) => p.value === act.prioridade) || PRIORITIES[1];
-                    const actDate = new Date(act.data);
+                    const actDate = parseActivityDate(act.data);
                     const isMeet = act.local && (act.local.startsWith('http://') || act.local.startsWith('https://'));
 
                     return (
