@@ -46,6 +46,10 @@ function buildActivityEmailHtml({ activity, isTomorrow = true, memberName = 'Mem
       ? 'Prioridade Normal'
       : 'Prioridade Média';
 
+  const descFormatada = activity.descricao
+    ? activity.descricao.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color:#38bdf8;text-decoration:underline;">$1</a>')
+    : '';
+
   return `
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -157,11 +161,11 @@ function buildActivityEmailHtml({ activity, isTomorrow = true, memberName = 'Mem
               </table>
 
               <!-- Descrição se houver -->
-              ${activity.descricao ? `
+              ${descFormatada ? `
               <div style="background-color:#171717;border-left:3px solid #a80303;padding:14px 16px;border-radius:4px;margin-bottom:24px;">
                 <strong style="display:block;font-size:12px;text-transform:uppercase;color:#9ca3af;margin-bottom:6px;">Orientações e Pauta:</strong>
                 <p style="margin:0;font-size:13px;color:#d1d5db;line-height:1.5;white-space:pre-line;">
-                  ${activity.descricao}
+                  ${descFormatada}
                 </p>
               </div>
               ` : ''}

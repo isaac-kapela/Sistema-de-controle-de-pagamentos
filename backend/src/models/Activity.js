@@ -9,7 +9,7 @@ const activitySchema = new mongoose.Schema(
     },
     descricao: {
       type: String,
-      default: '',
+      default: 'Pauta da reunião / Informações: https://docs.google.com/document/d/1JRl84EZZ2GDFJYrld4Sfck__olyE6RX1Yq_664zqdhw/edit?tab=t.0',
       trim: true,
     },
     data: {

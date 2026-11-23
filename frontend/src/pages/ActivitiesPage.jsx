@@ -39,6 +39,31 @@ function getCategoryColor(cat) {
   return CATEGORY_COLORS[cat] || CATEGORY_COLORS['Outro'];
 }
 
+const DEFAULT_PAUTA_LINK = 'https://docs.google.com/document/d/1JRl84EZZ2GDFJYrld4Sfck__olyE6RX1Yq_664zqdhw/edit?tab=t.0';
+
+function renderTextWithLinks(text) {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={i}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#0284c7', textDecoration: 'underline', wordBreak: 'break-all' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 function formatDateISO(d) {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -198,7 +223,7 @@ function EventDetailsModal({ event, onClose, onEdit, onDelete, onToggleComplete,
             {event.descricao && (
               <div style={s.detailsDescBox}>
                 <div style={s.detailsLabel}>Descrição / Pauta:</div>
-                <div style={s.detailsDescText}>{event.descricao}</div>
+                <div style={s.detailsDescText}>{renderTextWithLinks(event.descricao)}</div>
               </div>
             )}
           </div>
@@ -328,7 +353,7 @@ function ManualReminderModal({ activities = [], preselectedEvent = null, onClose
                 <div style={s.eventPreviewSub}>Local: {selectedEvent.local}</div>
               )}
               {selectedEvent.descricao && (
-                <div style={s.eventPreviewDesc}>{selectedEvent.descricao}</div>
+                <div style={s.eventPreviewDesc}>{renderTextWithLinks(selectedEvent.descricao)}</div>
               )}
             </div>
           )}
@@ -409,7 +434,7 @@ function EventFormModal({ item, initialDate, onClose, onSaved }) {
     }
     return {
       titulo: '',
-      descricao: '',
+      descricao: 'Pauta da reunião / Informações: ' + DEFAULT_PAUTA_LINK,
       data: initialDate ? formatDateISO(initialDate) : formatDateISO(new Date()),
       hora: '12:00',
       local: '',
@@ -1253,7 +1278,7 @@ export default function ActivitiesPage() {
                           </div>
 
                           {act.descricao && (
-                            <div style={s.agendaCardDesc}>{act.descricao}</div>
+                            <div style={s.agendaCardDesc}>{renderTextWithLinks(act.descricao)}</div>
                           )}
                         </div>
 
