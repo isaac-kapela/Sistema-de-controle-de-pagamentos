@@ -6,7 +6,7 @@ const Activity = require('../models/Activity');
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   pool: true,
-  maxConnections: 1,
+  maxConnections: 3,
   maxMessages: 100,
   auth: {
     user: process.env.MAIL_USER,
@@ -218,32 +218,40 @@ async function sendActivityReminderToActiveMembers(activity, isTomorrow = false,
 
   let sentCount = 0;
   const errors = [];
+  const CHUNK_SIZE = 5;
 
-  for (const member of recipients) {
-    try {
-      const html = buildActivityEmailHtml({
-        activity,
-        isTomorrow,
-        memberName: member.nome,
-      });
+  for (let i = 0; i < recipients.length; i += CHUNK_SIZE) {
+    const chunk = recipients.slice(i, i + CHUNK_SIZE);
+    await Promise.allSettled(
+      chunk.map(async (member) => {
+        try {
+          const html = buildActivityEmailHtml({
+            activity,
+            isTomorrow,
+            memberName: member.nome,
+          });
 
-      const subject = isTomorrow
-        ? `[Microraptor] Lembrete: ${activity.titulo} (Amanhã!)`
-        : `[Microraptor] Agenda: ${activity.titulo}`;
+          const subject = isTomorrow
+            ? `[Microraptor] Lembrete: ${activity.titulo} (Amanhã!)`
+            : `[Microraptor] Agenda: ${activity.titulo}`;
 
-      await transporter.sendMail({
-        from: `"Equipe Microraptor" <${process.env.MAIL_USER}>`,
-        to: member.email,
-        subject,
-        html,
-      });
+          await transporter.sendMail({
+            from: `"Equipe Microraptor" <${process.env.MAIL_USER}>`,
+            to: member.email,
+            subject,
+            html,
+          });
 
-      sentCount++;
-      // Pequeno delay para evitar rate limit do provedor SMTP
-      await new Promise((resolve) => setTimeout(resolve, 300));
-    } catch (err) {
-      console.error(`[ActivityReminder] Erro ao enviar para ${member.email}:`, err.message);
-      errors.push({ email: member.email, error: err.message });
+          sentCount++;
+        } catch (err) {
+          console.error(`[ActivityReminder] Erro ao enviar para ${member.email}:`, err.message);
+          errors.push({ email: member.email, error: err.message });
+        }
+      })
+    );
+
+    if (i + CHUNK_SIZE < recipients.length) {
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
   }
 
