@@ -100,9 +100,8 @@ function buildActivityEmailHtml({ activity, isTomorrow = true, memberName = 'Mem
                     <!-- Data -->
                     <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom:12px;">
                       <tr>
-                        <td width="28" valign="top" style="font-size:16px;">📅</td>
                         <td style="font-size:14px;color:#f3f4f6;">
-                          <strong style="color:#9ca3af;font-size:12px;text-transform:uppercase;display:block;">Data do Evento</strong>
+                          <strong style="color:#9ca3af;font-size:12px;text-transform:uppercase;display:block;margin-bottom:2px;">Data do Evento</strong>
                           ${dataFormatada}
                         </td>
                       </tr>
@@ -112,9 +111,8 @@ function buildActivityEmailHtml({ activity, isTomorrow = true, memberName = 'Mem
                     ${activity.hora ? `
                     <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom:12px;">
                       <tr>
-                        <td width="28" valign="top" style="font-size:16px;">⏰</td>
                         <td style="font-size:14px;color:#f3f4f6;">
-                          <strong style="color:#9ca3af;font-size:12px;text-transform:uppercase;display:block;">Horário</strong>
+                          <strong style="color:#9ca3af;font-size:12px;text-transform:uppercase;display:block;margin-bottom:2px;">Horário</strong>
                           ${activity.hora}
                         </td>
                       </tr>
@@ -124,9 +122,8 @@ function buildActivityEmailHtml({ activity, isTomorrow = true, memberName = 'Mem
                     <!-- Local -->
                     <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom:12px;">
                       <tr>
-                        <td width="28" valign="top" style="font-size:16px;">📍</td>
                         <td style="font-size:14px;color:#f3f4f6;">
-                          <strong style="color:#9ca3af;font-size:12px;text-transform:uppercase;display:block;">Local</strong>
+                          <strong style="color:#9ca3af;font-size:12px;text-transform:uppercase;display:block;margin-bottom:2px;">Local</strong>
                           ${localOuLink}
                         </td>
                       </tr>
@@ -136,9 +133,8 @@ function buildActivityEmailHtml({ activity, isTomorrow = true, memberName = 'Mem
                     ${activity.responsavel ? `
                     <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom:12px;">
                       <tr>
-                        <td width="28" valign="top" style="font-size:16px;">👤</td>
                         <td style="font-size:14px;color:#f3f4f6;">
-                          <strong style="color:#9ca3af;font-size:12px;text-transform:uppercase;display:block;">Responsável / Líder</strong>
+                          <strong style="color:#9ca3af;font-size:12px;text-transform:uppercase;display:block;margin-bottom:2px;">Responsável / Líder</strong>
                           ${activity.responsavel}
                         </td>
                       </tr>
@@ -148,9 +144,8 @@ function buildActivityEmailHtml({ activity, isTomorrow = true, memberName = 'Mem
                     <!-- Prioridade -->
                     <table width="100%" border="0" cellspacing="0" cellpadding="0">
                       <tr>
-                        <td width="28" valign="top" style="font-size:16px;">⚡</td>
                         <td style="font-size:13px;color:${prioridadeColor};font-weight:600;">
-                          <strong style="color:#9ca3af;font-size:12px;text-transform:uppercase;display:block;">Importância</strong>
+                          <strong style="color:#9ca3af;font-size:12px;text-transform:uppercase;display:block;margin-bottom:2px;">Importância</strong>
                           ${prioridadeLabel}
                         </td>
                       </tr>
