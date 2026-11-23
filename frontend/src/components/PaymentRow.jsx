@@ -15,7 +15,7 @@ export default function PaymentRow({ payment, chargeTypes, onToggle, onDeleted, 
     const isUndo = field === 'all'
       ? fullyPaid
       : charges.find(c => c.chargeTypeId === field || c.chargeTypeId?.toString() === field)?.paid ?? false;
-    if (isUndo && !isAdmin) { toast(MSG_GESTAO, { icon: 'ℹ️' }); return; }
+    if (isUndo && !isAdmin) { toast(MSG_GESTAO); return; }
     onToggle(id, field);
   };
 
@@ -133,7 +133,7 @@ export function PaymentCard({ payment, chargeTypes, onToggle, onDeleted, isAdmin
     const isUndo = field === 'all'
       ? fullyPaid
       : charges.find(c => c.chargeTypeId === field || c.chargeTypeId?.toString() === field)?.paid ?? false;
-    if (isUndo && !isAdmin) { toast(MSG_GESTAO, { icon: 'ℹ️' }); return; }
+    if (isUndo && !isAdmin) { toast(MSG_GESTAO); return; }
     onToggle(id, field);
   };
 

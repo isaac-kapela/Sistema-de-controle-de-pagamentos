@@ -247,7 +247,7 @@ export default function SchedulesPage() {
       <div style={s.tabBar}>
         <TabBtn id="geral"    active={tab} onClick={setTab}>Visão Geral</TabBtn>
         <TabBtn id="meu"      active={tab} onClick={setTab}>
-          {editingId ? '✏️ Editar Horário' : '+ Meu Horário'}
+          {editingId ? 'Editar Horário' : '+ Meu Horário'}
         </TabBtn>
         {schedules.length > 1 && (
           <TabBtn id="comparar" active={tab} onClick={setTab}>
@@ -419,8 +419,7 @@ export default function SchedulesPage() {
 
           {compareSelected.size === 0 && (
             <div style={s.empty}>
-              <span style={s.emptyIcon}>👥</span>
-              <p>Selecione pelo menos duas pessoas acima.</p>
+              <p>Selecione pelo menos duas pessoas acima para comparar disponibilidades.</p>
             </div>
           )}
 
@@ -508,7 +507,6 @@ export default function SchedulesPage() {
                   </div>
                 ) : (
                   <>
-                    <span style={s.dropIcon}>📄</span>
                     <p style={s.dropText}>Arraste o PDF aqui ou clique para selecionar</p>
                     <p style={s.dropSub}>Comprovante_Matricula.pdf</p>
                   </>
@@ -532,10 +530,10 @@ export default function SchedulesPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <button type="button" style={s.resetBtn} onClick={() => fileRef.current?.click()}>
-                    📄 {editingId ? 'Substituir via PDF' : 'Trocar PDF'}
+                    {editingId ? 'Substituir via PDF' : 'Trocar PDF'}
                   </button>
                   <button type="button" style={{ ...s.resetBtn, color: '#ef4444' }} onClick={handleReset}>
-                    {editingId ? 'Cancelar edição' : '← Limpar'}
+                    {editingId ? 'Cancelar edição' : 'Limpar'}
                   </button>
                 </div>
               </div>
@@ -607,10 +605,10 @@ export default function SchedulesPage() {
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
               <button style={s.editBtn} onClick={() => handleStartEdit(memberSchedule)}>
-                ✏️ Editar Horário
+                Editar Horário
               </button>
               <button style={s.deleteBtn} onClick={() => handleDelete(memberSchedule._id, memberSchedule.nome)}>
-                🗑️ Excluir Horário
+                Excluir Horário
               </button>
             </div>
           </div>
@@ -636,7 +634,6 @@ function AggView({ data, loading, emptyMsg, isAdmin, schedules, onDelete, onEdit
         <div style={s.loading}>Carregando...</div>
       ) : data.total === 0 ? (
         <div style={s.empty}>
-          <span style={s.emptyIcon}>📅</span>
           <p>Nenhum horário cadastrado ainda.</p>
           <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{emptyMsg}</p>
         </div>
@@ -657,8 +654,6 @@ function AggView({ data, loading, emptyMsg, isAdmin, schedules, onDelete, onEdit
                   onClick={() => onSelectMember && onSelectMember(sc.nome)}
                   title="Clique para ver o horário individual"
                 >
-                  {sc.capitao && <span style={{ color: '#f59e0b', fontSize: 13 }}>★</span>}
-                  {sc.lider && !sc.capitao && <span style={{ color: '#a78bfa', fontSize: 13 }}>◆</span>}
                   <span style={s.scNome}>{sc.nome}</span>
                   {sc.semestre && <span style={s.tagSem}>{sc.semestre}</span>}
                   {sc.area     && <span style={s.tagArea}>{sc.area}</span>}
@@ -668,10 +663,10 @@ function AggView({ data, loading, emptyMsg, isAdmin, schedules, onDelete, onEdit
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <button style={s.editBtn} onClick={() => onEdit(sc)}>
-                    ✏️ Editar
+                    Editar
                   </button>
                   <button style={s.deleteBtn} onClick={() => onDelete(sc._id, sc.nome)}>
-                    🗑️ Excluir
+                    Excluir
                   </button>
                 </div>
               </div>

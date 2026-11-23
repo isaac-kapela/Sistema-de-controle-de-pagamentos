@@ -76,8 +76,7 @@ export default function AttendanceTable({ meeting, isAdmin }) {
   if (!meeting) {
     return (
       <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>
-        <p style={{ fontSize: 32, margin: '0 0 12px' }}>📅</p>
-        <p>Selecione uma reunião no calendário para marcar presença</p>
+        <p style={{ fontSize: 15, fontWeight: 500 }}>Selecione uma reunião no calendário para marcar presença</p>
       </div>
     );
   }
