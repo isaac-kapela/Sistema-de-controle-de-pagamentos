@@ -193,26 +193,31 @@ function buildActivityEmailHtml({ activity, isTomorrow = true, memberName = 'Mem
   `;
 }
 
-// Envia lembrete de uma atividade específica para todos os membros ativos
-async function sendActivityReminderToActiveMembers(activity, isTomorrow = false) {
+// Envia lembrete de uma atividade específica para membros ativos ou para um e-mail de teste
+async function sendActivityReminderToActiveMembers(activity, isTomorrow = false, targetEmail = null) {
   if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
     console.warn('[ActivityReminder] Credenciais de e-mail não configuradas no .env');
     return { ok: false, error: 'Credenciais de e-mail não configuradas' };
   }
 
-  const activeMembers = await Member.find({
-    ativo: true,
-    email: { $exists: true, $ne: '' },
-  }).select('nome email');
+  let recipients = [];
+  if (targetEmail && targetEmail.trim()) {
+    recipients = [{ nome: 'Isaac Dizolele (Teste)', email: targetEmail.trim() }];
+  } else {
+    recipients = await Member.find({
+      ativo: true,
+      email: { $exists: true, $ne: '' },
+    }).select('nome email');
+  }
 
-  if (activeMembers.length === 0) {
-    return { ok: true, count: 0, message: 'Nenhum membro ativo com e-mail cadastrado' };
+  if (recipients.length === 0) {
+    return { ok: true, count: 0, message: 'Nenhum destinatário encontrado com e-mail cadastrado' };
   }
 
   let sentCount = 0;
   const errors = [];
 
-  for (const member of activeMembers) {
+  for (const member of recipients) {
     try {
       const html = buildActivityEmailHtml({
         activity,
@@ -233,6 +238,7 @@ async function sendActivityReminderToActiveMembers(activity, isTomorrow = false)
 
       sentCount++;
     } catch (err) {
+      console.error(`[ActivityReminder] Erro ao enviar para ${member.email}:`, err.message);
       errors.push({ email: member.email, error: err.message });
     }
   }
@@ -245,7 +251,7 @@ async function sendActivityReminderToActiveMembers(activity, isTomorrow = false)
   return {
     ok: true,
     sentCount,
-    total: activeMembers.length,
+    total: recipients.length,
     errors,
   };
 }

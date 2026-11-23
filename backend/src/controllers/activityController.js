@@ -205,22 +205,27 @@ exports.remove = async (req, res) => {
 exports.sendManualReminder = async (req, res) => {
   try {
     const { id } = req.params;
+    const { targetEmail } = req.body;
     const activity = await Activity.findById(id);
 
     if (!activity) {
       return res.status(404).json({ error: 'Atividade não encontrada' });
     }
 
-    const result = await sendActivityReminderToActiveMembers(activity, false);
+    const result = await sendActivityReminderToActiveMembers(activity, false, targetEmail);
     if (!result.ok) {
       return res.status(400).json({ error: result.error || 'Falha ao enviar lembrete' });
     }
+
+    const msg = targetEmail
+      ? `E-mail de teste enviado com sucesso para ${targetEmail}!`
+      : `Lembrete enviado com sucesso para ${result.sentCount} membros ativos!`;
 
     res.json({
       ok: true,
       sentCount: result.sentCount,
       total: result.total,
-      message: `Lembrete enviado com sucesso para ${result.sentCount} membros ativos!`,
+      message: msg,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

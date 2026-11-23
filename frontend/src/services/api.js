@@ -306,8 +306,8 @@ export const updateActivity = (id, data) =>
 export const toggleActivityComplete = (id) =>
   api.patch(`/activities/${id}/toggle-complete`).then((r) => r.data);
 
-export const sendActivityReminder = (id) =>
-  api.post(`/activities/${id}/send-reminder`).then((r) => r.data);
+export const sendActivityReminder = (id, data = {}) =>
+  api.post(`/activities/${id}/send-reminder`, data).then((r) => r.data);
 
 export const checkTomorrowActivities = () =>
   api.post('/activities/check-tomorrow').then((r) => r.data);

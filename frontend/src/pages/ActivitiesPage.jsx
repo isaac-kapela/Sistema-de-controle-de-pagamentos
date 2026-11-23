@@ -194,7 +194,7 @@ function ActivityModal({ item, onClose, onSaved }) {
               <input
                 style={s.input}
                 type="text"
-                placeholder="Ex: 14:00 ou 18:30 às 20:00"
+                placeholder="Ex: 12:00 ou 12:00 às 13:00"
                 value={form.hora || ''}
                 onChange={(e) => setField('hora', e.target.value)}
               />
@@ -374,13 +374,18 @@ export default function ActivitiesPage() {
   }
 
   async function handleSendReminder(act) {
-    if (!window.confirm(`Deseja disparar o lembrete por e-mail agora para todos os membros ativos sobre "${act.titulo}"?`)) {
-      return;
-    }
+    const defaultEmail = 'dizolele.isaac@estudante.ufjf.br';
+    const inputEmail = window.prompt(
+      `Enviar e-mail sobre "${act.titulo}".\nDigite o e-mail de destino para teste (ou deixe em branco para enviar a todos os membros ativos):`,
+      defaultEmail
+    );
 
-    const tId = toast.loading('Disparando e-mails para membros ativos...');
+    if (inputEmail === null) return;
+
+    const isTest = Boolean(inputEmail.trim());
+    const tId = toast.loading(isTest ? `Enviando e-mail de teste para ${inputEmail.trim()}...` : 'Disparando e-mails para membros ativos...');
     try {
-      const res = await sendActivityReminder(act._id);
+      const res = await sendActivityReminder(act._id, { targetEmail: isTest ? inputEmail.trim() : undefined });
       toast.success(res.message || 'Lembrete enviado com sucesso!', { id: tId });
       fetchActivities();
     } catch (err) {
