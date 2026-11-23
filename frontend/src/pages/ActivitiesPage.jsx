@@ -280,9 +280,11 @@ export default function ActivitiesPage() {
     setLoading(true);
     try {
       const data = await getActivities();
-      setActivities(data);
+      const list = Array.isArray(data) ? data : (data?.activities || []);
+      setActivities(list);
     } catch (err) {
       toast.error('Erro ao carregar atividades');
+      setActivities([]);
     } finally {
       setLoading(false);
     }
@@ -294,9 +296,10 @@ export default function ActivitiesPage() {
 
   // Estatísticas Rápidas (KPIs)
   const stats = useMemo(() => {
-    const total = activities.length;
-    const open = activities.filter((a) => !a.concluida);
-    const completed = activities.filter((a) => a.concluida);
+    const list = Array.isArray(activities) ? activities : [];
+    const total = list.length;
+    const open = list.filter((a) => !a.concluida);
+    const completed = list.filter((a) => a.concluida);
     const highPriority = open.filter((a) => a.prioridade === 'alta');
 
     const now = new Date();
@@ -322,12 +325,13 @@ export default function ActivitiesPage() {
 
   // Filtros aplicados
   const filteredActivities = useMemo(() => {
+    const list = Array.isArray(activities) ? activities : [];
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const sevenDays = new Date(today);
     sevenDays.setDate(sevenDays.getDate() + 7);
 
-    return activities.filter((act) => {
+    return list.filter((act) => {
       // Busca textual
       if (search.trim()) {
         const q = search.toLowerCase();
