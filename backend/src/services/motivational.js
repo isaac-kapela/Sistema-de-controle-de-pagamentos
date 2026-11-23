@@ -4,6 +4,9 @@ const Member = require('../models/Member');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
+  pool: true,
+  maxConnections: 1,
+  maxMessages: 100,
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,

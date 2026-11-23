@@ -5,6 +5,9 @@ const Activity = require('../models/Activity');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
+  pool: true,
+  maxConnections: 1,
+  maxMessages: 100,
   auth: {
     user: process.env.MAIL_USER,
     pass: process.env.MAIL_PASS,
@@ -236,16 +239,30 @@ async function sendActivityReminderToActiveMembers(activity, isTomorrow = false,
       });
 
       sentCount++;
+      // Pequeno delay para evitar rate limit do provedor SMTP
+      await new Promise((resolve) => setTimeout(resolve, 300));
     } catch (err) {
       console.error(`[ActivityReminder] Erro ao enviar para ${member.email}:`, err.message);
       errors.push({ email: member.email, error: err.message });
     }
   }
 
-  // Marca atividade como notificada
-  activity.notificacaoEnviada = true;
-  activity.notificadoEm = new Date();
-  await activity.save();
+  // Marca atividade como notificada se ao menos um e-mail foi enviado
+  if (sentCount > 0) {
+    activity.notificacaoEnviada = true;
+    activity.notificadoEm = new Date();
+    await activity.save();
+  }
+
+  if (sentCount === 0 && errors.length > 0) {
+    return {
+      ok: false,
+      sentCount: 0,
+      total: recipients.length,
+      error: errors[0]?.error || 'Erro ao enviar e-mails',
+      errors,
+    };
+  }
 
   return {
     ok: true,
