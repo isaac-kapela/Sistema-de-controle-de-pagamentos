@@ -566,14 +566,14 @@ export default function ActivitiesPage() {
                   {/* Meta Details (Date, Time, Location, Leader) */}
                   <div style={s.metaGrid}>
                     <div style={s.metaItem}>
-                      <span style={s.metaIcon}>📅</span>
+                      <span style={s.metaLabel}>Data:</span>
                       <span>{formatDateDisplay(act.data)}</span>
                       {act.hora && <span style={s.metaSub}>às {act.hora}</span>}
                     </div>
 
                     {act.local && (
                       <div style={s.metaItem}>
-                        <span style={s.metaIcon}>📍</span>
+                        <span style={s.metaLabel}>Local:</span>
                         {isMeetLink ? (
                           <a
                             href={act.local}
@@ -591,7 +591,7 @@ export default function ActivitiesPage() {
 
                     {act.responsavel && (
                       <div style={s.metaItem}>
-                        <span style={s.metaIcon}>👤</span>
+                        <span style={s.metaLabel}>Responsável:</span>
                         <span>{act.responsavel}</span>
                       </div>
                     )}
@@ -609,17 +609,17 @@ export default function ActivitiesPage() {
                     {act.notificarEmail ? (
                       act.notificacaoEnviada ? (
                         <span style={{ color: '#10b981', fontSize: 12 }}>
-                          ✉️ Lembrete enviado por e-mail aos membros ativos
+                          Lembrete enviado por e-mail aos membros ativos
                           {act.notificadoEm && ` em ${new Date(act.notificadoEm).toLocaleString('pt-BR')}`}
                         </span>
                       ) : (
                         <span style={{ color: '#f59e0b', fontSize: 12 }}>
-                          🔔 Notificação por e-mail agendada (disparo automático 1 dia antes às 08:00)
+                          Notificação por e-mail agendada (disparo automático 1 dia antes às 08:00)
                         </span>
                       )
                     ) : (
                       <span style={{ color: '#6b7280', fontSize: 12 }}>
-                        🔕 Notificação por e-mail desativada para este evento
+                        Notificação por e-mail desativada para este evento
                       </span>
                     )}
                   </div>
@@ -632,7 +632,7 @@ export default function ActivitiesPage() {
                     onClick={() => handleToggleComplete(act)}
                     title={act.concluida ? 'Reabrir atividade' : 'Marcar como concluída'}
                   >
-                    {act.concluida ? 'Reabrir' : '✓ Concluir'}
+                    {act.concluida ? 'Reabrir' : 'Concluir'}
                   </button>
 
                   <button
@@ -640,7 +640,7 @@ export default function ActivitiesPage() {
                     onClick={() => handleSendReminder(act)}
                     title="Dispara e-mail de lembrete agora para todos os membros ativos"
                   >
-                    ✉️ Disparar E-mail
+                    Disparar E-mail
                   </button>
 
                   <button
@@ -907,8 +907,12 @@ const s = {
     alignItems: 'center',
     gap: 6,
   },
-  metaIcon: {
-    fontSize: 14,
+  metaLabel: {
+    fontSize: 12,
+    fontWeight: 600,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   metaSub: {
     color: 'var(--text-primary)',
