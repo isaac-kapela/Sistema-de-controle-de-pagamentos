@@ -9,6 +9,7 @@ async function sendTodayBirthdays() {
 
   const members = await Member.find({
     ativo: true,
+    tipoMembro: { $ne: 'ex-membro' },
     email: { $ne: '' },
     dataNascimento: { $ne: null },
   });
