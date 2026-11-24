@@ -18,6 +18,7 @@ const CATEGORY_COLORS = {
   'Competição': { bg: '#ef4444', text: '#ffffff', lightBg: 'rgba(239, 68, 68, 0.15)', border: '#ef4444' },
   'Marco de Projeto': { bg: '#8b5cf6', text: '#ffffff', lightBg: 'rgba(139, 92, 246, 0.15)', border: '#8b5cf6' },
   'Social / Integração': { bg: '#ec4899', text: '#ffffff', lightBg: 'rgba(236, 72, 153, 0.15)', border: '#ec4899' },
+  'Aniversário': { bg: '#e11d48', text: '#ffffff', lightBg: 'rgba(225, 29, 72, 0.15)', border: '#e11d48' },
   'Outro': { bg: '#6b7280', text: '#ffffff', lightBg: 'rgba(107, 114, 128, 0.15)', border: '#6b7280' },
 };
 

@@ -312,6 +312,9 @@ export const sendActivityReminder = (id, data = {}) =>
 export const checkTomorrowActivities = () =>
   api.post('/activities/check-tomorrow').then((r) => r.data);
 
+export const syncBirthdayActivities = (data = {}) =>
+  api.post('/activities/sync-birthdays', data).then((r) => r.data);
+
 export const deleteActivity = (id) =>
   api.delete(`/activities/${id}`).then((r) => r.data);
 

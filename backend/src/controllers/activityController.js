@@ -4,6 +4,7 @@ const {
   checkAndSendTomorrowActivities,
 } = require('../services/activityReminder');
 const { syncMeetingsToActivities } = require('../services/meetingSync');
+const { syncBirthdaysToActivities } = require('../services/birthdaySync');
 
 // Lista todas as atividades com filtros e busca
 exports.list = async (req, res) => {
@@ -227,6 +228,25 @@ exports.sendManualReminder = async (req, res) => {
       sentCount: result.sentCount,
       total: result.total,
       message: msg,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Sincroniza aniversários dos membros ativos para o calendário de Atividades
+exports.syncBirthdays = async (req, res) => {
+  try {
+    const { years } = req.body || {};
+    const result = await syncBirthdaysToActivities(years || [2025, 2026, 2027]);
+    if (!result.ok) {
+      return res.status(500).json({ error: result.error || 'Erro ao sincronizar aniversários' });
+    }
+    res.json({
+      ok: true,
+      syncedCount: result.syncedCount,
+      membersCount: result.membersCount,
+      message: `${result.membersCount} aniversariantes sincronizados com sucesso no calendário de atividades!`,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -35,6 +35,7 @@ const activitySchema = new mongoose.Schema(
         'Competição',
         'Marco de Projeto',
         'Social / Integração',
+        'Aniversário',
         'Outro',
       ],
       default: 'Reunião Geral',
