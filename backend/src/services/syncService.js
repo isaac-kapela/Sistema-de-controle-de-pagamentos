@@ -161,6 +161,7 @@ async function syncKnowledgeBase(force = false) {
             downloadUrl: fileMeta.downloadUrl,
             folderPath: fileMeta.folderPath,
             folderId: fileMeta.folderId,
+            area: fileMeta.area || 'Geral',
             size: fileMeta.size,
             driveModifiedTime: fileMeta.driveModifiedTime,
             status: 'processing',
@@ -171,6 +172,7 @@ async function syncKnowledgeBase(force = false) {
           docRecord.fileExtension = fileMeta.fileExtension;
           docRecord.driveUrl = fileMeta.driveUrl;
           docRecord.folderPath = fileMeta.folderPath;
+          docRecord.area = fileMeta.area || docRecord.area || 'Geral';
           docRecord.size = fileMeta.size;
           docRecord.driveModifiedTime = fileMeta.driveModifiedTime;
           docRecord.status = 'processing';
@@ -211,6 +213,7 @@ async function syncKnowledgeBase(force = false) {
           driveFileId: fileMeta.driveFileId,
           documentName: fileMeta.name,
           folderPath: fileMeta.folderPath,
+          area: fileMeta.area || 'Geral',
           driveUrl: fileMeta.driveUrl,
           chunkIndex: c.chunkIndex,
           totalChunks: chunks.length,

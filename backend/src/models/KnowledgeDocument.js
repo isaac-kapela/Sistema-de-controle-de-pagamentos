@@ -10,6 +10,7 @@ const knowledgeDocumentSchema = new mongoose.Schema(
     downloadUrl: { type: String, default: '' },
     folderPath: { type: String, default: '/' },
     folderId: { type: String, default: '' },
+    area: { type: String, default: 'Geral', index: true },
     size: { type: Number, default: 0 },
     driveModifiedTime: { type: Date, default: null },
     indexedAt: { type: Date, default: null },

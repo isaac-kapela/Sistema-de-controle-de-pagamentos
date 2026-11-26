@@ -3,7 +3,7 @@ const KnowledgeChunk = require('../models/KnowledgeChunk');
 const KnowledgeSetting = require('../models/KnowledgeSetting');
 
 /**
- * Divide o texto do documento em trechos (chunks) inteligentes com overlap
+ * Divide o texto do documento em trechos (chunks) semânticos preservando cabeçalhos e tópicos
  */
 function chunkText(text, maxChars = 900, overlap = 180) {
   if (!text || typeof text !== 'string') return [];
@@ -17,20 +17,30 @@ function chunkText(text, maxChars = 900, overlap = 180) {
 
   if (!normalized) return [];
   if (normalized.length <= maxChars) {
-    return [{ content: normalized, chunkIndex: 0, section: '' }];
+    return [{ content: normalized, chunkIndex: 0, section: normalized.substring(0, 50) + '...' }];
   }
 
   const chunks = [];
-  // Divide preferencialmente por quebras de parágrafo ou seções
   const paragraphs = normalized.split(/\n+/);
   let currentChunk = '';
+  let currentSection = '';
   let chunkIdx = 0;
 
   for (let i = 0; i < paragraphs.length; i++) {
     const p = paragraphs[i].trim();
     if (!p) continue;
 
-    // Se o próprio parágrafo for gigante, quebra por frases
+    // Detecta se o parágrafo atual é um título/cabeçalho
+    const isHeading =
+      p.startsWith('#') ||
+      /^(capítulo|título|seção|artigo|anexo|apêndice|tabela|figura)\b/i.test(p) ||
+      (p.length < 70 && p === p.toUpperCase() && /[A-Z]/.test(p));
+
+    if (isHeading) {
+      currentSection = p.replace(/^#+\s*/, '').substring(0, 80);
+    }
+
+    // Se o próprio parágrafo for muito grande, quebra por frases
     if (p.length > maxChars) {
       const sentences = p.match(/[^.!?]+[.!?]+|\s*$/g) || [p];
       for (const sentence of sentences) {
@@ -39,9 +49,8 @@ function chunkText(text, maxChars = 900, overlap = 180) {
           chunks.push({
             content: currentChunk.trim(),
             chunkIndex: chunkIdx++,
-            section: currentChunk.substring(0, 50) + '...',
+            section: currentSection || currentChunk.substring(0, 50) + '...',
           });
-          // Mantém overlap pegando o final do chunk anterior
           currentChunk = currentChunk.slice(-overlap) + ' ' + sentence;
         } else {
           currentChunk = currentChunk ? `${currentChunk} ${sentence}` : sentence;
@@ -54,9 +63,8 @@ function chunkText(text, maxChars = 900, overlap = 180) {
       chunks.push({
         content: currentChunk.trim(),
         chunkIndex: chunkIdx++,
-        section: currentChunk.substring(0, 50) + '...',
+        section: currentSection || currentChunk.substring(0, 50) + '...',
       });
-      // Cria overlap com o final do chunk anterior
       const overlapText = currentChunk.slice(-overlap);
       currentChunk = `${overlapText}\n${p}`;
     } else {
@@ -68,7 +76,7 @@ function chunkText(text, maxChars = 900, overlap = 180) {
     chunks.push({
       content: currentChunk.trim(),
       chunkIndex: chunkIdx++,
-      section: currentChunk.substring(0, 50) + '...',
+      section: currentSection || currentChunk.substring(0, 50) + '...',
     });
   }
 
@@ -110,7 +118,6 @@ async function generateEmbeddings(texts, apiKey) {
 
       while (attempts < 3 && !batchResults) {
         try {
-          // Utiliza batchEmbedContents para enviar todo o lote em uma única chamada de rede
           const response = await embeddingModel.batchEmbedContents({
             requests: batch.map((t) => ({
               content: { parts: [{ text: t.slice(0, 2048) }] },
@@ -173,9 +180,49 @@ function cosineSimilarity(vecA, vecB) {
 }
 
 /**
- * Realiza busca semântica e híbrida nos chunks da base de conhecimento
+ * Expande e contextualiza a pergunta do usuário utilizando o histórico recente da conversa
  */
-async function searchRelevantChunks(query, limit = 8) {
+async function expandQueryWithContext(query, chatHistory = [], apiKey = null) {
+  if (!chatHistory || chatHistory.length === 0 || !apiKey) {
+    return query;
+  }
+
+  try {
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite' });
+
+    const recentHistory = chatHistory.slice(-4);
+    const historyText = recentHistory
+      .map((m) => `${m.role === 'user' ? 'Membro' : 'Microsabedoria'}: ${m.content}`)
+      .join('\n');
+
+    const prompt = `HISTÓRICO DA CONVERSA:
+${historyText}
+
+ÚLTIMA PERGUNTA DO MEMBRO:
+"${query}"
+
+INSTRUÇÃO:
+Reescreva a pergunta acima transformando-a em uma frase de busca independente e contextualizada para recuperação de documentos técnicos no acervo da equipe Microraptor.
+Se a pergunta já for autoexplicativa, mantenha-a como está.
+Responda EXCLUSIVAMENTE com a frase de busca reescrita, sem introduções, aspas ou comentários.`;
+
+    const result = await model.generateContent(prompt);
+    const expanded = result.response.text().trim();
+    if (expanded && expanded.length > 3 && expanded.length < 300) {
+      return expanded;
+    }
+  } catch (err) {
+    // Fallback silencioso para a query original
+  }
+
+  return query;
+}
+
+/**
+ * Realiza busca semântica e híbrida nos chunks da base de conhecimento com suporte a filtro por Área
+ */
+async function searchRelevantChunks(query, limit = 8, area = null) {
   if (!query || !query.trim()) return [];
 
   const apiKey = await getGeminiApiKey();
@@ -184,26 +231,31 @@ async function searchRelevantChunks(query, limit = 8) {
   if (apiKey) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const embeddingModels = ['gemini-embedding-001', 'text-embedding-004'];
-      for (const m of embeddingModels) {
-        try {
-          const embeddingModel = genAI.getGenerativeModel({ model: m });
-          const embRes = await embeddingModel.embedContent(query.slice(0, 1024));
-          queryEmbedding = embRes.embedding?.values || null;
-          if (queryEmbedding) break;
-        } catch (e) {
-          // try next
-        }
-      }
+      const embeddingModel = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
+      const embRes = await embeddingModel.embedContent(query.slice(0, 1024));
+      queryEmbedding = embRes.embedding?.values || null;
     } catch (err) {
       console.warn('[RAG] Falha ao gerar embedding da pergunta do usuário:', err.message);
     }
   }
 
-  // Busca todos os chunks com projeção necessária
-  const chunks = await KnowledgeChunk.find()
-    .select('documentName folderPath driveUrl chunkIndex totalChunks content section embedding')
+  // Prepara filtro do MongoDB por Área se especificado
+  const queryFilter = {};
+  if (area && area !== 'Todas' && area !== 'Geral') {
+    queryFilter.area = area;
+  }
+
+  // Busca chunks no MongoDB
+  let chunks = await KnowledgeChunk.find(queryFilter)
+    .select('documentName folderPath area driveUrl chunkIndex totalChunks content section embedding')
     .lean();
+
+  // Se o filtro estrito de área retornou poucos chunks, busca em todas as áreas
+  if (chunks.length < 3 && area && area !== 'Todas') {
+    chunks = await KnowledgeChunk.find()
+      .select('documentName folderPath area driveUrl chunkIndex totalChunks content section embedding')
+      .lean();
+  }
 
   if (!chunks || chunks.length === 0) return [];
 
@@ -229,13 +281,18 @@ async function searchRelevantChunks(query, limit = 8) {
     let keywordHits = 0;
 
     for (const word of queryWords) {
-      if (docNameLower.includes(word)) keywordHits += 2;
+      if (docNameLower.includes(word)) keywordHits += 2.5;
       if (contentLower.includes(word)) keywordHits += 1;
     }
 
     if (queryWords.length > 0) {
       const kwScore = Math.min(keywordHits / (queryWords.length * 2), 1.0);
       score += kwScore * 0.25;
+    }
+
+    // Boost se pertencer à área selecionada pelo usuário
+    if (area && area !== 'Todas' && chunk.area === area) {
+      score += 0.15;
     }
 
     return {
@@ -252,9 +309,9 @@ async function searchRelevantChunks(query, limit = 8) {
 }
 
 /**
- * Gera resposta fundamentada utilizando Gemini com RAG
+ * Gera resposta fundamentada utilizando Gemini com RAG, expansão de consulta e filtros
  */
-async function generateRAGAnswer({ query, chatHistory = [], customApiKey = null }) {
+async function generateRAGAnswer({ query, chatHistory = [], area = 'Todas', customApiKey = null }) {
   const apiKey = await getGeminiApiKey(customApiKey);
 
   if (!apiKey) {
@@ -265,10 +322,13 @@ async function generateRAGAnswer({ query, chatHistory = [], customApiKey = null 
     };
   }
 
-  // 1. Recupera chunks mais relevantes
-  const relevantChunks = await searchRelevantChunks(query, 8);
+  // 1. Expande a consulta com base no histórico para buscas com dependência de contexto
+  const effectiveQuery = await expandQueryWithContext(query, chatHistory, apiKey);
 
-  // 2. Extrai fontes únicas
+  // 2. Recupera chunks mais relevantes
+  const relevantChunks = await searchRelevantChunks(effectiveQuery, 8, area);
+
+  // 3. Extrai fontes únicas
   const sourcesMap = new Map();
   const contextSnippets = [];
 
@@ -279,20 +339,22 @@ async function generateRAGAnswer({ query, chatHistory = [], customApiKey = null 
         documentName: chunk.documentName,
         driveUrl: chunk.driveUrl || '',
         folderPath: chunk.folderPath || '/',
+        area: chunk.area || 'Geral',
+        section: chunk.section || '',
         snippet: chunk.content.substring(0, 200) + '...',
         score: Math.round(chunk.score * 100) / 100,
       });
     }
 
     contextSnippets.push(
-      `[DOCUMENTO ${idx + 1}: "${chunk.documentName}" | Pasta: ${chunk.folderPath} | Link: ${chunk.driveUrl}]\n${chunk.content}\n`
+      `[DOCUMENTO ${idx + 1}: "${chunk.documentName}" | Área: ${chunk.area || 'Geral'} | Pasta: ${chunk.folderPath} | Seção: ${chunk.section || 'Geral'} | Link: ${chunk.driveUrl}]\n${chunk.content}\n`
     );
   });
 
   const sources = Array.from(sourcesMap.values());
   const contextText = contextSnippets.join('\n---\n');
 
-  // 3. Monta o Prompt com regras estritas de confiabilidade
+  // 4. Monta o Prompt com regras estritas de confiabilidade
   const systemInstruction = `Você é a Microsabedoria, o assistente inteligente e central de conhecimento da equipe Microraptor UFJF (equipe de competição aerodesign da Universidade Federal de Juiz de Fora).
 
 DIRETRIZES FUNDAMENTAIS DE RESPOSTA:
@@ -300,10 +362,10 @@ DIRETRIZES FUNDAMENTAIS DE RESPOSTA:
 2. CITAÇÃO DAS FONTES: Sempre que utilizar informações dos documentos, cite o nome exato do documento e, se disponível, inclua o link do Google Drive como referência.
 3. NÃO ALUCINE / TRANSPARÊNCIA: Se a informação solicitada NÃO estiver documentada nos arquivos fornecidos, declare explicitamente: "Não encontrei essa informação documentada nos arquivos do Google Drive da Microraptor." Caso possa dar uma orientação geral com base em engenharia/conhecimento amplo, deixe claro que se trata de uma explicação conceitual externa aos documentos oficiais da equipe.
 4. DIVERGÊNCIAS: Caso documentos diferentes apresentem informações conflitantes, aponte a divergência e indique quais arquivos mencionam cada versão.
-5. FORMATAÇÃO: Formate sua resposta de forma limpa, elegante e organizada em Markdown (use tópicos, negrito, tabelas e listas quando apropriado).
+5. FORMATAÇÃO: Formate sua resposta de forma limpa, elegante e organizada em Markdown (use tópicos, negrito, tabelas e listas quando apropriado). Nunca utilize emojis decorativos.
 6. TOM DE VOZ: Profissional, prestativo, claro e alinhado aos valores e espírito de engenharia da equipe Microraptor UFJF.`;
 
-  const userPrompt = `DOCUMENTOS DISPONÍVEIS NA BASE DE CONHECIMENTO:
+  const userPrompt = `DOCUMENTOS DISPONÍVEIS NA BASE DE CONHECIMENTO (${area !== 'Todas' ? `Filtro de Área: ${area}` : 'Todas as Áreas'}):
 ${contextText ? contextText : '(Nenhum documento diretamente relevante encontrado no banco vetorial)'}
 
 HISTÓRICO DA CONVERSA:
@@ -344,6 +406,7 @@ Por favor, elabore uma resposta completa, precisa e fundamentada.`;
           answer: responseText,
           sources: sources.length > 0 ? sources : [],
           model: modelName,
+          expandedQuery: effectiveQuery !== query ? effectiveQuery : undefined,
         };
       } catch (err) {
         lastError = err;
@@ -368,5 +431,6 @@ module.exports = {
   generateEmbeddings,
   cosineSimilarity,
   searchRelevantChunks,
+  expandQueryWithContext,
   generateRAGAnswer,
 };

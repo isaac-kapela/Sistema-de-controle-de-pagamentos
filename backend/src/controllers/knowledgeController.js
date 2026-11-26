@@ -318,7 +318,7 @@ async function reindexDocument(req, res) {
  */
 async function chat(req, res) {
   try {
-    const { message, sessionId } = req.body;
+    const { message, sessionId, area = 'Todas' } = req.body;
 
     if (!message || !message.trim()) {
       return res.status(400).json({ error: 'A mensagem não pode ser vazia.' });
@@ -343,10 +343,11 @@ async function chat(req, res) {
       timestamp: new Date(),
     });
 
-    // Gera resposta com RAG
+    // Gera resposta com RAG, expansão contextual e filtro de área
     const ragResult = await generateRAGAnswer({
       query: message,
       chatHistory: session.messages,
+      area,
     });
 
     // Adiciona resposta do assistente
@@ -357,6 +358,8 @@ async function chat(req, res) {
         documentName: s.documentName || 'Documento',
         driveUrl: s.driveUrl || '',
         folderPath: s.folderPath || '/',
+        area: s.area || 'Geral',
+        section: s.section || '',
         snippet: s.snippet || '',
         score: s.score || 0,
       })),
@@ -374,6 +377,7 @@ async function chat(req, res) {
       reply: ragResult.answer,
       sources: ragResult.sources || [],
       model: ragResult.model,
+      expandedQuery: ragResult.expandedQuery,
       messages: session.messages,
     });
   } catch (err) {

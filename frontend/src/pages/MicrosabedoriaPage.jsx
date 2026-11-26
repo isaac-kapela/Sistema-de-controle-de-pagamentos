@@ -18,13 +18,27 @@ import {
   reindexMicrosabedoriaDocument,
 } from '../services/api';
 
+const AREAS = [
+  'Todas',
+  'Gestão',
+  'Aerodinâmica',
+  'Estruturas',
+  'Cargas',
+  'Estabilidade',
+  'Elétrica',
+  'Material Didático',
+  'Geral',
+];
+
 const QUICK_QUESTIONS = [
-  'Como funciona o processo de solicitação de transporte para competições?',
-  'Quais são os procedimentos para solicitar auxílio financeiro ou reembolso?',
-  'Como funciona o processo seletivo da equipe?',
-  'Quais são os patrocinadores atuais da Microraptor?',
-  'Como funciona a prestação de contas dos projetos?',
-  'Qual é o histórico de participação da equipe na SAE Brasil AeroDesign?',
+  { area: 'Gestão', text: 'Como funciona o processo de solicitação de transporte para competições?' },
+  { area: 'Gestão', text: 'Quais são os procedimentos para solicitar auxílio financeiro ou reembolso?' },
+  { area: 'Gestão', text: 'Como funciona o processo seletivo da equipe?' },
+  { area: 'Aerodinâmica', text: 'Qual o perfil aerodinâmico e metodologia de cálculo de sustentação utilizada pela equipe?' },
+  { area: 'Estruturas', text: 'Quais materiais e critérios de dimensionamento estrutural são adotados para a asa e fuselagem?' },
+  { area: 'Cargas', text: 'Como é calculada a envoltória de cargas e fatores de carga limite da aeronave?' },
+  { area: 'Estabilidade', text: 'Como é determinada a margem estática e a estabilidade longitudinal da aeronave?' },
+  { area: 'Elétrica', text: 'Quais são os critérios de escolha do motor elétrico, bateria e ESC para o trem de força?' },
 ];
 
 export default function MicrosabedoriaPage() {
@@ -35,6 +49,8 @@ export default function MicrosabedoriaPage() {
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
+  const [selectedArea, setSelectedArea] = useState('Todas');
+  const [previewSnippet, setPreviewSnippet] = useState(null);
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
@@ -132,9 +148,11 @@ export default function MicrosabedoriaPage() {
     }
   };
 
-  const handleSendMessage = async (textToSend = null) => {
+  const handleSendMessage = async (textToSend = null, areaOverride = null) => {
     const text = textToSend || inputMessage;
     if (!text || !text.trim() || loading) return;
+
+    const areaToUse = areaOverride || (selectedArea !== 'Todas' ? selectedArea : undefined);
 
     const userMsg = {
       role: 'user',
@@ -150,6 +168,7 @@ export default function MicrosabedoriaPage() {
       const data = await sendMicrosabedoriaChat({
         message: text.trim(),
         sessionId: currentSessionId,
+        area: areaToUse,
       });
 
       setCurrentSessionId(data.sessionId);
@@ -171,6 +190,11 @@ export default function MicrosabedoriaPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleCopyText = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Resposta copiada para a área de transferência.');
   };
 
   const handleKeyDown = (e) => {
@@ -364,25 +388,49 @@ export default function MicrosabedoriaPage() {
           )}
         </header>
 
+        {/* Barra de Filtro por Área Temática */}
+        <div style={styles.areaFilterBar}>
+          <span style={styles.areaFilterLabel}>Área:</span>
+          <div style={styles.areaPillsContainer}>
+            {AREAS.map((area) => (
+              <button
+                key={area}
+                onClick={() => setSelectedArea(area)}
+                style={{
+                  ...styles.areaPill,
+                  ...(selectedArea === area ? styles.areaPillActive : {}),
+                }}
+              >
+                {area}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Mensagens */}
         <div style={styles.messagesContainer}>
           {messages.length === 0 ? (
             <div style={styles.welcomeContainer}>
               <h3 style={styles.welcomeTitle}>Central de Conhecimento Inteligente</h3>
               <p style={styles.welcomeText}>
-                Faça perguntas em linguagem natural para consultar manuais, histórico, relatórios,
-                regulamentos e documentos do Google Drive da Microraptor.
+                Faça perguntas em linguagem natural para consultar manuais, histórico, relatórios técnicos,
+                regulamentos da SAE Brasil e documentos do Google Drive da Microraptor.
               </p>
 
               <div style={styles.quickQuestionsGrid}>
                 {QUICK_QUESTIONS.map((q, idx) => (
                   <button
                     key={idx}
-                    onClick={() => handleSendMessage(q)}
+                    onClick={() => {
+                      if (q.area && q.area !== 'Todas') {
+                        setSelectedArea(q.area);
+                      }
+                      handleSendMessage(q.text, q.area);
+                    }}
                     style={styles.quickQuestionCard}
                   >
-                    <span style={styles.quickQuestionIcon}>›</span>
-                    <span>{q}</span>
+                    <span style={styles.quickQuestionAreaBadge}>{q.area}</span>
+                    <span style={styles.quickQuestionText}>{q.text}</span>
                   </button>
                 ))}
               </div>
@@ -407,14 +455,25 @@ export default function MicrosabedoriaPage() {
                     <span style={styles.bubbleAuthor}>
                       {msg.role === 'user' ? 'Você' : 'Microsabedoria'}
                     </span>
-                    <span style={styles.bubbleTime}>
-                      {msg.timestamp
-                        ? new Date(msg.timestamp).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                        : ''}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={styles.bubbleTime}>
+                        {msg.timestamp
+                          ? new Date(msg.timestamp).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : ''}
+                      </span>
+                      {msg.role === 'assistant' && (
+                        <button
+                          onClick={() => handleCopyText(msg.content)}
+                          style={styles.copyBtn}
+                          title="Copiar resposta"
+                        >
+                          Copiar
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Conteúdo da Mensagem com Markdown */}
@@ -435,20 +494,33 @@ export default function MicrosabedoriaPage() {
                           <div key={sIdx} style={styles.sourceCard}>
                             <div style={styles.sourceTop}>
                               <strong style={styles.sourceDocName}>{src.documentName}</strong>
+                              {src.area && (
+                                <span style={styles.sourceAreaBadge}>{src.area}</span>
+                              )}
                             </div>
                             <div style={styles.sourcePath}>
                               Pasta: {src.folderPath || '/'}
                             </div>
-                            {src.driveUrl && (
-                              <a
-                                href={src.driveUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={styles.sourceDriveLink}
-                              >
-                                Abrir no Google Drive ↗
-                              </a>
-                            )}
+                            <div style={styles.sourceActionsRow}>
+                              {src.text && (
+                                <button
+                                  onClick={() => setPreviewSnippet(src)}
+                                  style={styles.viewSnippetBtn}
+                                >
+                                  Ver Trecho
+                                </button>
+                              )}
+                              {src.driveUrl && (
+                                <a
+                                  href={src.driveUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={styles.sourceDriveLink}
+                                >
+                                  Abrir no Drive ↗
+                                </a>
+                              )}
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -748,6 +820,7 @@ export default function MicrosabedoriaPage() {
                         <tr>
                           <th style={styles.th}>Nome do Arquivo</th>
                           <th style={styles.th}>Pasta no Drive</th>
+                          <th style={styles.th}>Área</th>
                           <th style={styles.th}>Tipo</th>
                           <th style={styles.th}>Trechos</th>
                           <th style={styles.th}>Status</th>
@@ -766,6 +839,9 @@ export default function MicrosabedoriaPage() {
                               )}
                             </td>
                             <td style={styles.td}>{doc.folderPath || '/'}</td>
+                            <td style={styles.td}>
+                              <span style={styles.areaBadge(doc.area)}>{doc.area || 'Geral'}</span>
+                            </td>
                             <td style={styles.td}>
                               <span style={styles.extBadge}>{doc.fileExtension?.toUpperCase() || 'ARQ'}</span>
                             </td>
@@ -816,6 +892,43 @@ export default function MicrosabedoriaPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Pré-visualização de Trecho (Snippet) */}
+      {previewSnippet && (
+        <div style={styles.modalOverlay} onClick={() => setPreviewSnippet(null)}>
+          <div style={{ ...styles.modalContent, maxWidth: 650 }} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalHeader}>
+              <div>
+                <h3 style={styles.modalTitle}>{previewSnippet.documentName}</h3>
+                <p style={styles.modalSubtitle}>
+                  Pasta: {previewSnippet.folderPath || '/'} {previewSnippet.area && `• Área: ${previewSnippet.area}`}
+                </p>
+              </div>
+              <button onClick={() => setPreviewSnippet(null)} style={styles.modalCloseBtn}>
+                ✕
+              </button>
+            </div>
+            <div style={styles.modalBody}>
+              <div style={styles.snippetBox}>
+                <div style={styles.snippetLabel}>Trecho Semântico Recuperado da Base:</div>
+                <div style={styles.snippetText}>{previewSnippet.text}</div>
+              </div>
+              {previewSnippet.driveUrl && (
+                <div style={{ marginTop: 16, textAlign: 'right' }}>
+                  <a
+                    href={previewSnippet.driveUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.driveDirectBtn}
+                  >
+                    Abrir Documento Completo no Google Drive ↗
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -968,6 +1081,47 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  areaFilterBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '10px 24px',
+    background: 'var(--bg-card2)',
+    borderBottom: '1px solid var(--border)',
+    overflowX: 'auto',
+  },
+  areaFilterLabel: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginRight: 4,
+    flexShrink: 0,
+  },
+  areaPillsContainer: {
+    display: 'flex',
+    gap: 6,
+    flexWrap: 'nowrap',
+  },
+  areaPill: {
+    background: 'var(--bg)',
+    border: '1px solid var(--border)',
+    borderRadius: 16,
+    padding: '4px 12px',
+    fontSize: 12,
+    fontWeight: 500,
+    color: 'var(--text-muted)',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.15s ease',
+  },
+  areaPillActive: {
+    background: 'var(--primary)',
+    borderColor: 'var(--primary)',
+    color: '#ffffff',
+    fontWeight: 700,
+  },
   chatTitle: {
     fontSize: 18,
     fontWeight: 700,
@@ -1029,15 +1183,30 @@ const styles = {
     background: 'var(--bg-card)',
     border: '1px solid var(--border)',
     borderRadius: 'var(--radius)',
-    padding: '14px 16px',
+    padding: '12px 14px',
     color: 'var(--text)',
     fontSize: 13,
     cursor: 'pointer',
     display: 'flex',
+    flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: 10,
+    gap: 6,
     transition: 'border-color 0.2s, transform 0.15s',
     lineHeight: 1.4,
+  },
+  quickQuestionAreaBadge: {
+    background: 'var(--bg-card2)',
+    border: '1px solid var(--border)',
+    color: 'var(--primary)',
+    padding: '2px 6px',
+    borderRadius: 4,
+    fontSize: 10,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+  },
+  quickQuestionText: {
+    color: 'var(--text)',
+    fontSize: 12,
   },
   quickQuestionIcon: {
     fontSize: 16,
@@ -1082,6 +1251,17 @@ const styles = {
     fontSize: 11,
     opacity: 0.7,
   },
+  copyBtn: {
+    background: 'var(--bg-card2)',
+    border: '1px solid var(--border)',
+    color: 'var(--text-muted)',
+    borderRadius: 4,
+    padding: '2px 8px',
+    fontSize: 10,
+    fontWeight: 600,
+    cursor: 'pointer',
+    transition: 'all 0.15s ease',
+  },
   markdownWrapper: {
     wordBreak: 'break-word',
   },
@@ -1107,13 +1287,25 @@ const styles = {
     borderRadius: 6,
     padding: '8px 12px',
     fontSize: 12,
-    maxWidth: 320,
+    maxWidth: 340,
+    flex: '1 1 240px',
   },
   sourceTop: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 6,
-    marginBottom: 2,
+    marginBottom: 4,
+  },
+  sourceAreaBadge: {
+    background: 'var(--bg)',
+    border: '1px solid var(--border)',
+    color: 'var(--primary)',
+    padding: '1px 5px',
+    borderRadius: 4,
+    fontSize: 10,
+    fontWeight: 700,
+    flexShrink: 0,
   },
   sourceDocIcon: {
     fontSize: 14,
@@ -1123,11 +1315,32 @@ const styles = {
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
+    fontSize: 12,
   },
   sourcePath: {
     fontSize: 11,
     color: 'var(--text-muted)',
-    marginBottom: 4,
+    marginBottom: 6,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  sourceActionsRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 4,
+  },
+  viewSnippetBtn: {
+    background: 'transparent',
+    border: '1px solid var(--border)',
+    color: 'var(--text)',
+    borderRadius: 4,
+    padding: '2px 8px',
+    fontSize: 11,
+    cursor: 'pointer',
+    fontWeight: 500,
   },
   sourceDriveLink: {
     color: '#38bdf8',
@@ -1483,5 +1696,46 @@ const styles = {
     border: 'none',
     cursor: 'pointer',
     fontSize: 14,
+  },
+  areaBadge: (area) => ({
+    padding: '2px 8px',
+    borderRadius: 4,
+    fontSize: 11,
+    fontWeight: 600,
+    background: 'var(--bg-card2)',
+    border: '1px solid var(--border)',
+    color: 'var(--primary)',
+  }),
+  snippetBox: {
+    background: 'var(--bg)',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
+    padding: 16,
+  },
+  snippetLabel: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: 'var(--text-muted)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+  },
+  snippetText: {
+    fontSize: 13,
+    lineHeight: 1.6,
+    color: 'var(--text)',
+    whiteSpace: 'pre-wrap',
+    maxHeight: '50vh',
+    overflowY: 'auto',
+  },
+  driveDirectBtn: {
+    display: 'inline-block',
+    background: 'var(--primary)',
+    color: '#fff',
+    textDecoration: 'none',
+    padding: '8px 16px',
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 600,
   },
 };

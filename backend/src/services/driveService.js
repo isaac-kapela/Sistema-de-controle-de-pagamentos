@@ -81,6 +81,58 @@ const SUPPORTED_MIME_TYPES = {
   'application/json': { ext: 'json' },
 };
 
+/**
+ * Detecta a área/setor da equipe com base no caminho da pasta e nome do arquivo
+ */
+function detectAreaFromPath(folderPath = '', filename = '') {
+  const target = `${folderPath} ${filename}`.toLowerCase();
+
+  if (target.includes('gestão') || target.includes('gestao') || target.includes('regulamento') || target.includes('ata') || target.includes('planejamento') || target.includes('capitania') || target.includes('diretoria')) {
+    return 'Gestão';
+  }
+  if (target.includes('aerodinâmica') || target.includes('aerodinamica') || target.includes('aero') || target.includes('perfil') || target.includes('asa') || target.includes('envergadura') || target.includes('polimorfismo')) {
+    return 'Aerodinâmica';
+  }
+  if (target.includes('estrutura') || target.includes('material') || target.includes('longarina') || target.includes('fuselagem') || target.includes('trem de pouso') || target.includes('compósito')) {
+    return 'Estruturas';
+  }
+  if (target.includes('carga') || target.includes('empenagem') || target.includes('envelope') || target.includes('desempenho') || target.includes('voo') || target.includes('manobra')) {
+    return 'Cargas';
+  }
+  if (target.includes('estabilidade') || target.includes('controle') || target.includes('superfície') || target.includes('superficie') || target.includes('leme') || target.includes('profundor') || target.includes('aileron')) {
+    return 'Estabilidade';
+  }
+  if (target.includes('elétrica') || target.includes('eletrica') || target.includes('sistema') || target.includes('telemetria') || target.includes('motor') || target.includes('propulsão') || target.includes('bateria') || target.includes('servo')) {
+    return 'Elétrica';
+  }
+  if (target.includes('material didático') || target.includes('didatico') || target.includes('didática') || target.includes('curso') || target.includes('manual') || target.includes('apostila') || target.includes('livro')) {
+    return 'Material Didático';
+  }
+
+  return 'Geral';
+}
+
+/**
+ * Identifica pastas de ruído (logs brutos de simulação, sementes de algoritmos genéticos, malhas numéricas)
+ */
+function isNoiseFolder(folderName = '', folderPath = '') {
+  const combined = `${folderPath}/${folderName}`.toLowerCase();
+  const noisePatterns = [
+    'best_seed_',
+    'logs_e_geometria',
+    'arquivos_best_seed',
+    'resultados_brutos',
+    'mesh_data',
+    'temp_',
+    'cache_',
+    '__pycache__',
+    '.git',
+    'node_modules',
+  ];
+
+  return noisePatterns.some((pattern) => combined.includes(pattern));
+}
+
 function isFileSupported(mimeType, filename = '') {
   if (SUPPORTED_MIME_TYPES[mimeType]) return true;
   const ext = (filename.split('.').pop() || '').toLowerCase();
@@ -106,7 +158,7 @@ async function listFilesRecursively(drive, folderId, currentPath = '', onProgres
 
   while (queue.length > 0) {
     // Processa lotes de pastas concorrentemente para maior rapidez
-    const batch = queue.splice(0, 4);
+    const batch = queue.splice(0, 6);
 
     await Promise.all(
       batch.map(async (current) => {
@@ -115,7 +167,7 @@ async function listFilesRecursively(drive, folderId, currentPath = '', onProgres
         folderCount++;
 
         if (onProgress) {
-          onProgress(`Explorando pasta: ${current.folderPath || 'raiz'} (${allFiles.length} arquivos encontrados)`);
+          onProgress(`Explorando pasta: ${current.folderPath || 'raiz'} (${allFiles.length} arquivos catalogados)`);
         }
 
         let pageToken = null;
@@ -133,6 +185,10 @@ async function listFilesRecursively(drive, folderId, currentPath = '', onProgres
             const files = res.data.files || [];
             for (const file of files) {
               if (file.mimeType === 'application/vnd.google-apps.folder') {
+                // Pula pastas de ruído (logs brutos e sementes de simulações)
+                if (isNoiseFolder(file.name, current.folderPath)) {
+                  continue;
+                }
                 const nextPath = current.folderPath
                   ? `${current.folderPath}/${file.name}`
                   : file.name;
@@ -150,6 +206,7 @@ async function listFilesRecursively(drive, folderId, currentPath = '', onProgres
                   downloadUrl: file.webContentLink || '',
                   folderPath: current.folderPath ? `/${current.folderPath}` : '/',
                   folderId: current.folderId,
+                  area: detectAreaFromPath(current.folderPath, file.name),
                   size: file.size ? parseInt(file.size, 10) : 0,
                   driveModifiedTime: file.modifiedTime ? new Date(file.modifiedTime) : new Date(),
                 });
@@ -166,7 +223,7 @@ async function listFilesRecursively(drive, folderId, currentPath = '', onProgres
     );
   }
 
-  console.log(`[DriveService] Concluída varredura de ${folderCount} pastas. Total de ${allFiles.length} arquivos catalogados.`);
+  console.log(`[DriveService] Concluída varredura de ${folderCount} pastas úteis. Total de ${allFiles.length} arquivos catalogados.`);
   return allFiles;
 }
 
@@ -301,4 +358,6 @@ module.exports = {
   listFilesRecursively,
   extractFileText,
   testDriveAccess,
+  detectAreaFromPath,
+  isNoiseFolder,
 };

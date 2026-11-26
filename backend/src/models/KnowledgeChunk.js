@@ -11,6 +11,7 @@ const knowledgeChunkSchema = new mongoose.Schema(
     driveFileId: { type: String, required: true, index: true },
     documentName: { type: String, required: true, index: true },
     folderPath: { type: String, default: '/' },
+    area: { type: String, default: 'Geral', index: true },
     driveUrl: { type: String, default: '' },
     chunkIndex: { type: Number, required: true },
     totalChunks: { type: Number, required: true },
