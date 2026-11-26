@@ -99,7 +99,23 @@ async function generateEmbeddings(texts, apiKey) {
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'text-embedding-004' });
+    const embeddingModels = ['gemini-embedding-001', 'text-embedding-004'];
+    let workingModel = null;
+
+    for (const m of embeddingModels) {
+      try {
+        const testModel = genAI.getGenerativeModel({ model: m });
+        await testModel.embedContent('test');
+        workingModel = testModel;
+        break;
+      } catch (e) {
+        // try next
+      }
+    }
+
+    if (!workingModel) {
+      workingModel = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
+    }
 
     const embeddings = [];
     // Processa em lotes para respeitar limites de taxa
@@ -107,7 +123,7 @@ async function generateEmbeddings(texts, apiKey) {
       const batch = texts.slice(i, i + 10);
       const batchPromises = batch.map(async (text) => {
         try {
-          const res = await model.embedContent(text.slice(0, 2048));
+          const res = await workingModel.embedContent(text.slice(0, 2048));
           return res.embedding?.values || null;
         } catch (err) {
           console.warn('[RAG] Erro ao gerar embedding individual:', err.message);
@@ -157,9 +173,17 @@ async function searchRelevantChunks(query, limit = 8) {
   if (apiKey) {
     try {
       const genAI = new GoogleGenerativeAI(apiKey);
-      const embeddingModel = genAI.getGenerativeModel({ model: 'text-embedding-004' });
-      const embRes = await embeddingModel.embedContent(query.slice(0, 1024));
-      queryEmbedding = embRes.embedding?.values || null;
+      const embeddingModels = ['gemini-embedding-001', 'text-embedding-004'];
+      for (const m of embeddingModels) {
+        try {
+          const embeddingModel = genAI.getGenerativeModel({ model: m });
+          const embRes = await embeddingModel.embedContent(query.slice(0, 1024));
+          queryEmbedding = embRes.embedding?.values || null;
+          if (queryEmbedding) break;
+        } catch (e) {
+          // try next
+        }
+      }
     } catch (err) {
       console.warn('[RAG] Falha ao gerar embedding da pergunta do usuário:', err.message);
     }
@@ -285,8 +309,15 @@ Por favor, elabore uma resposta completa, precisa e fundamentada.`;
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // Tenta modelos em ordem de preferência: 2.5-flash -> 1.5-flash -> 1.5-pro
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
+    // Tenta modelos modernos e suportados em ordem de preferência
+    const modelsToTry = [
+      'gemini-3.5-flash',
+      'gemini-3.8-flash',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-3.1-flash-lite',
+      'gemini-3.1-pro-preview',
+    ];
     let lastError = null;
 
     for (const modelName of modelsToTry) {

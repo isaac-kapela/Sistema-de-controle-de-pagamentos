@@ -104,9 +104,30 @@ async function testConnection(req, res) {
     if (keyToTest) {
       try {
         const genAI = new GoogleGenerativeAI(keyToTest);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const testRes = await model.generateContent('Responda apenas: OK');
-        results.gemini = { ok: true, message: 'Conexão com a API do Google Gemini validada com sucesso!' };
+        const modelsToTry = [
+          'gemini-3.5-flash',
+          'gemini-3.8-flash',
+          'gemini-3.7-flash',
+          'gemini-3.6-flash',
+          'gemini-3.1-flash-lite',
+          'gemini-3.1-pro-preview',
+        ];
+        let lastErr = null;
+        let validated = false;
+        for (const m of modelsToTry) {
+          try {
+            const model = genAI.getGenerativeModel({ model: m });
+            await model.generateContent('Responda apenas: OK');
+            results.gemini = { ok: true, message: `Conexão com a API do Google Gemini validada com sucesso (${m})!` };
+            validated = true;
+            break;
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+        if (!validated) {
+          throw lastErr || new Error('Nenhum modelo Gemini compatível respondeu.');
+        }
       } catch (err) {
         results.gemini = { ok: false, message: `Erro ao validar API do Gemini: ${err.message}` };
       }
