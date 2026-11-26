@@ -311,7 +311,7 @@ export default function MicrosabedoriaPage() {
           </div>
           {isAdmin && (
             <button onClick={handleOpenAdminModal} style={styles.adminSettingsBtn}>
-              ⚙️ Painel da Base (Admin)
+              Painel da Base (Admin)
             </button>
           )}
         </div>
@@ -332,7 +332,7 @@ export default function MicrosabedoriaPage() {
                 }}
               >
                 <div style={styles.sessionItemTitle} title={sess.title}>
-                  💬 {sess.title}
+                  {sess.title}
                 </div>
                 <button
                   onClick={(e) => handleDeleteSession(e, sess.sessionId)}
@@ -368,8 +368,7 @@ export default function MicrosabedoriaPage() {
         <div style={styles.messagesContainer}>
           {messages.length === 0 ? (
             <div style={styles.welcomeContainer}>
-              <div style={styles.welcomeIcon}>🦅</div>
-              <h3 style={styles.welcomeTitle}>Olá! Eu sou a Microsabedoria</h3>
+              <h3 style={styles.welcomeTitle}>Central de Conhecimento Inteligente</h3>
               <p style={styles.welcomeText}>
                 Faça perguntas em linguagem natural para consultar manuais, histórico, relatórios,
                 regulamentos e documentos do Google Drive da Microraptor.
@@ -382,7 +381,7 @@ export default function MicrosabedoriaPage() {
                     onClick={() => handleSendMessage(q)}
                     style={styles.quickQuestionCard}
                   >
-                    <span style={styles.quickQuestionIcon}>💡</span>
+                    <span style={styles.quickQuestionIcon}>›</span>
                     <span>{q}</span>
                   </button>
                 ))}
@@ -429,13 +428,12 @@ export default function MicrosabedoriaPage() {
                   {msg.sources && msg.sources.length > 0 && (
                     <div style={styles.sourcesContainer}>
                       <div style={styles.sourcesTitle}>
-                        📎 Documentos do Google Drive consultados:
+                        Documentos do Google Drive consultados:
                       </div>
                       <div style={styles.sourcesList}>
                         {msg.sources.map((src, sIdx) => (
                           <div key={sIdx} style={styles.sourceCard}>
                             <div style={styles.sourceTop}>
-                              <span style={styles.sourceDocIcon}>📄</span>
                               <strong style={styles.sourceDocName}>{src.documentName}</strong>
                             </div>
                             <div style={styles.sourcePath}>
@@ -498,7 +496,7 @@ export default function MicrosabedoriaPage() {
                 cursor: loading || !inputMessage.trim() ? 'not-allowed' : 'pointer',
               }}
             >
-              Enviar ➔
+              Enviar
             </button>
           </div>
           <div style={styles.inputHelp}>
@@ -513,7 +511,7 @@ export default function MicrosabedoriaPage() {
           <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
             <div style={styles.modalHeader}>
               <div>
-                <h3 style={styles.modalTitle}>⚙️ Painel da Base de Conhecimento - Microsabedoria</h3>
+                <h3 style={styles.modalTitle}>Painel da Base de Conhecimento - Microsabedoria</h3>
                 <p style={styles.modalSubtitle}>
                   Configuração de integração com o Google Drive e LLM (Gemini)
                 </p>
@@ -683,7 +681,7 @@ export default function MicrosabedoriaPage() {
                       disabled={testingConnection}
                       style={styles.testBtn}
                     >
-                      {testingConnection ? 'Testando Conexão...' : '🔍 Testar Conexão'}
+                      {testingConnection ? 'Testando Conexão...' : 'Testar Conexão'}
                     </button>
 
                     <button
@@ -692,7 +690,7 @@ export default function MicrosabedoriaPage() {
                       disabled={syncingNow || syncStatus?.syncStatus === 'syncing'}
                       style={styles.syncBtn}
                     >
-                      🔄 Sincronizar Agora
+                      Sincronizar Agora
                     </button>
 
                     <button
@@ -700,7 +698,7 @@ export default function MicrosabedoriaPage() {
                       disabled={savingSettings}
                       style={styles.saveBtn}
                     >
-                      {savingSettings ? 'Salvando...' : '💾 Salvar Configurações'}
+                      {savingSettings ? 'Salvando...' : 'Salvar Configurações'}
                     </button>
                   </div>
                 </form>
@@ -763,7 +761,7 @@ export default function MicrosabedoriaPage() {
                               <div style={{ fontWeight: 600 }}>{doc.name}</div>
                               {doc.errorMessage && (
                                 <div style={{ fontSize: 11, color: 'var(--danger)', marginTop: 2 }}>
-                                  ⚠️ {doc.errorMessage}
+                                  {doc.errorMessage}
                                 </div>
                               )}
                             </td>
@@ -799,14 +797,14 @@ export default function MicrosabedoriaPage() {
                                   style={styles.reindexBtn}
                                   title="Reindexar"
                                 >
-                                  🔄
+                                  Reindexar
                                 </button>
                                 <button
                                   onClick={() => handleDeleteDocument(doc._id, doc.name)}
                                   style={styles.deleteDocBtn}
                                   title="Remover da base"
                                 >
-                                  🗑️
+                                  Excluir
                                 </button>
                               </div>
                             </td>
