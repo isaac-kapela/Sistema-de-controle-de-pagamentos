@@ -25,7 +25,10 @@ export default function App() {
       <header className="app-header">
         <div style={s.brand}>
           <img src="/logo.png" alt="Logo" style={s.logo} />
-          <h1 className="app-title">Microraptor</h1>
+          <div>
+            <h1 className="app-title">Microraptor</h1>
+            <div style={s.authorTag}>Desenvolvido por Isaac Kapela</div>
+          </div>
         </div>
         <div className="header-actions">
           {isAdmin ? (
@@ -94,6 +97,17 @@ export default function App() {
         </Routes>
       </main>
 
+      {/* Footer com Assinatura Oficial */}
+      <footer style={s.footer}>
+        <div style={s.footerContent}>
+          <span>Equipe Microraptor UFJF</span>
+          <span style={s.footerDot}>•</span>
+          <span>Desenvolvido e mantido por <strong style={{ color: 'var(--text)' }}>Isaac Kapela</strong></span>
+          <span style={s.footerDot}>•</span>
+          <span>© {new Date().getFullYear()}</span>
+        </div>
+      </footer>
+
       {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
     </div>
   );
@@ -101,8 +115,15 @@ export default function App() {
 
 const s = {
   page: { minHeight: '100vh', display: 'flex', flexDirection: 'column' },
-  brand: { display: 'flex', alignItems: 'center', gap: 10 },
-  logo: { height: 40, width: 40, objectFit: 'contain', borderRadius: 8, flexShrink: 0 },
+  brand: { display: 'flex', alignItems: 'center', gap: 12 },
+  logo: { height: 42, width: 42, objectFit: 'contain', borderRadius: 8, flexShrink: 0 },
+  authorTag: {
+    fontSize: 11,
+    color: 'var(--text-muted)',
+    letterSpacing: '0.02em',
+    marginTop: -2,
+    fontWeight: 500,
+  },
   adminBtn: {
     background: 'transparent', color: 'var(--text-muted)',
     border: '1px solid var(--border)', padding: '8px 14px',
@@ -136,5 +157,24 @@ const s = {
     color: 'var(--text)',
     borderBottom: '2px solid var(--primary)',
     fontWeight: 700,
+  },
+  footer: {
+    background: 'var(--bg-card)',
+    borderTop: '1px solid var(--border)',
+    padding: '16px 24px',
+    marginTop: 'auto',
+    textAlign: 'center',
+  },
+  footerContent: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    flexWrap: 'wrap',
+    fontSize: 12,
+    color: 'var(--text-muted)',
+  },
+  footerDot: {
+    color: 'var(--border)',
   },
 };
