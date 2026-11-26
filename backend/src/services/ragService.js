@@ -309,14 +309,13 @@ Por favor, elabore uma resposta completa, precisa e fundamentada.`;
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
 
-    // Tenta modelos modernos e suportados em ordem de preferência
+    // Tenta modelos modernos e rápidos em ordem de preferência
     const modelsToTry = [
+      'gemini-3.1-flash-lite',
       'gemini-3.5-flash',
       'gemini-3.8-flash',
       'gemini-3.7-flash',
       'gemini-3.6-flash',
-      'gemini-3.1-flash-lite',
-      'gemini-3.1-pro-preview',
     ];
     let lastError = null;
 
