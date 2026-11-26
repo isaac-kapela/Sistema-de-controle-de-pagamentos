@@ -138,10 +138,11 @@ async function syncKnowledgeBase(force = false) {
         // Remove chunks antigos do documento
         await KnowledgeChunk.deleteMany({ documentId: docRecord._id });
 
-        // 6. Gera embeddings para os chunks
+        // 6. Gera embeddings para os chunks (limita a no máximo 60 embeddings por documento para não saturar a cota de taxa)
         let embeddings = [];
-        if (geminiApiKey) {
-          const chunkTexts = chunks.map((c) => `${fileMeta.name} (${fileMeta.folderPath}):\n${c.content}`);
+        if (geminiApiKey && chunks.length > 0) {
+          const chunksToEmbed = chunks.slice(0, 60);
+          const chunkTexts = chunksToEmbed.map((c) => `${fileMeta.name} (${fileMeta.folderPath}):\n${c.content}`);
           embeddings = await generateEmbeddings(chunkTexts, geminiApiKey);
         }
 

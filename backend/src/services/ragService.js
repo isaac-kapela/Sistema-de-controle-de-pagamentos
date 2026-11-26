@@ -89,50 +89,52 @@ async function getGeminiApiKey(explicitKey = null) {
 }
 
 /**
- * Gera embeddings usando a API do Gemini
+ * Gera embeddings usando a API do Gemini com controle de taxa e retentativas automáticas
  */
 async function generateEmbeddings(texts, apiKey) {
-  if (!apiKey) {
-    console.warn('[RAG] Nenhuma chave Gemini fornecida para gerar embeddings.');
+  if (!apiKey || !texts || texts.length === 0) {
     return texts.map(() => null);
   }
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-    const embeddingModels = ['gemini-embedding-001', 'text-embedding-004'];
-    let workingModel = null;
-
-    for (const m of embeddingModels) {
-      try {
-        const testModel = genAI.getGenerativeModel({ model: m });
-        await testModel.embedContent('test');
-        workingModel = testModel;
-        break;
-      } catch (e) {
-        // try next
-      }
-    }
-
-    if (!workingModel) {
-      workingModel = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
-    }
+    const embeddingModel = genAI.getGenerativeModel({ model: 'gemini-embedding-001' });
 
     const embeddings = [];
-    // Processa em lotes para respeitar limites de taxa
-    for (let i = 0; i < texts.length; i += 10) {
-      const batch = texts.slice(i, i + 10);
+    // Limita lotes pequenos e inclui espaçamento para não estourar os limites da cota gratuita
+    const batchSize = 5;
+    for (let i = 0; i < texts.length; i += batchSize) {
+      const batch = texts.slice(i, i + batchSize);
       const batchPromises = batch.map(async (text) => {
-        try {
-          const res = await workingModel.embedContent(text.slice(0, 2048));
-          return res.embedding?.values || null;
-        } catch (err) {
-          console.warn('[RAG] Erro ao gerar embedding individual:', err.message);
-          return null;
+        let attempts = 0;
+        while (attempts < 3) {
+          try {
+            const res = await embeddingModel.embedContent(text.slice(0, 2048));
+            return res.embedding?.values || null;
+          } catch (err) {
+            attempts++;
+            const isRateLimit = err.message && (err.message.includes('429') || err.message.includes('QuotaFailure') || err.message.includes('RESOURCE_EXHAUSTED'));
+            if (isRateLimit && attempts < 3) {
+              // Espera exponencial antes de tentar de novo
+              await new Promise((r) => setTimeout(r, 2000 * attempts));
+            } else {
+              if (attempts >= 3) {
+                console.warn('[RAG] Limite de embedding excedido, mantendo chunk para busca textual.');
+              }
+              return null;
+            }
+          }
         }
+        return null;
       });
 
       const batchResults = await Promise.all(batchPromises);
       embeddings.push(...batchResults);
+
+      // Pequena pausa entre lotes se houver mais chunks
+      if (i + batchSize < texts.length) {
+        await new Promise((r) => setTimeout(r, 400));
+      }
     }
 
     return embeddings;
