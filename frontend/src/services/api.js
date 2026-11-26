@@ -326,10 +326,10 @@ export const updateMicrosabedoriaSettings = (data) =>
   api.post('/microsabedoria/settings', data).then((r) => r.data);
 
 export const testMicrosabedoriaConnection = (data) =>
-  api.post('/microsabedoria/test-connection', data).then((r) => r.data);
+  api.post('/microsabedoria/test-connection', data, { timeout: 60000 }).then((r) => r.data);
 
 export const syncMicrosabedoria = (data = {}) =>
-  api.post('/microsabedoria/sync', data).then((r) => r.data);
+  api.post('/microsabedoria/sync', data, { timeout: 60000 }).then((r) => r.data);
 
 export const getMicrosabedoriaSyncStatus = () =>
   api.get('/microsabedoria/sync-status').then((r) => r.data);
@@ -341,10 +341,10 @@ export const deleteMicrosabedoriaDocument = (id) =>
   api.delete(`/microsabedoria/documents/${id}`).then((r) => r.data);
 
 export const reindexMicrosabedoriaDocument = (id) =>
-  api.post(`/microsabedoria/documents/${id}/reindex`).then((r) => r.data);
+  api.post(`/microsabedoria/documents/${id}/reindex`, {}, { timeout: 60000 }).then((r) => r.data);
 
 export const sendMicrosabedoriaChat = (data) =>
-  api.post('/microsabedoria/chat', data).then((r) => r.data);
+  api.post('/microsabedoria/chat', data, { timeout: 120000 }).then((r) => r.data);
 
 export const getMicrosabedoriaSessions = () =>
   api.get('/microsabedoria/sessions').then((r) => r.data);
