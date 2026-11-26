@@ -8,10 +8,10 @@ const Activity = require('../models/Activity');
  */
 async function syncBirthdaysToActivities(years = [2025, 2026, 2027]) {
   try {
-    // Busca apenas membros estritamente ativos (tipoMembro !== 'ex-membro')
+    // Busca apenas membros estritamente ativos (tipoMembro === 'membro' e ativo === true)
     const activeMembers = await Member.find({
       ativo: true,
-      tipoMembro: { $ne: 'ex-membro' },
+      tipoMembro: 'membro',
       dataNascimento: { $ne: null },
     }).select('nome dataNascimento area');
 

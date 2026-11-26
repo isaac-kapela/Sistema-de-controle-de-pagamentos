@@ -61,4 +61,14 @@ const memberSchema = new mongoose.Schema(
   { timestamps: true, toJSON: { virtuals: true } }
 );
 
+// Garante consistência entre tipoMembro e ativo
+memberSchema.pre('save', function (next) {
+  if (this.tipoMembro === 'ex-membro') {
+    this.ativo = false;
+  } else if (this.ativo === false) {
+    this.tipoMembro = 'ex-membro';
+  }
+  next();
+});
+
 module.exports = mongoose.model('Member', memberSchema);

@@ -1,10 +1,27 @@
 const Member = require('../models/Member');
 
+// Sincroniza e garante consistência no banco: ex-membros sempre com ativo=false
+async function sanitizeMemberStatus() {
+  try {
+    await Member.updateMany(
+      { tipoMembro: 'ex-membro', ativo: true },
+      { $set: { ativo: false } }
+    );
+    await Member.updateMany(
+      { ativo: false, tipoMembro: 'membro' },
+      { $set: { tipoMembro: 'ex-membro' } }
+    );
+  } catch (err) {
+    console.warn('[MemberController] Erro ao sanitizar status dos membros:', err.message);
+  }
+}
+
 // GET /api/members
 async function listMembers(req, res) {
   try {
+    await sanitizeMemberStatus();
     const { search = '' } = req.query;
-    const filter = { ativo: true };
+    const filter = { ativo: true, tipoMembro: 'membro' };
     if (search) {
       filter.$or = [
         { nome: { $regex: search, $options: 'i' } },
@@ -35,12 +52,16 @@ async function getMember(req, res) {
 // POST /api/members
 async function createMember(req, res) {
   try {
+    if (req.body.tipoMembro === 'ex-membro') {
+      req.body.ativo = false;
+    }
     // Se existe membro inativo com mesmo CPF, reativa com os novos dados
     const inactive = await Member.findOne({ cpf: req.body.cpf?.trim(), ativo: false });
     if (inactive) {
+      const updateData = { ...req.body, ativo: req.body.tipoMembro !== 'ex-membro' };
       const member = await Member.findByIdAndUpdate(
         inactive._id,
-        { ...req.body, ativo: true },
+        updateData,
         { new: true, runValidators: true }
       );
       return res.status(200).json(member);
@@ -64,6 +85,14 @@ async function createMember(req, res) {
 // PUT /api/members/:id
 async function updateMember(req, res) {
   try {
+    if (req.body.tipoMembro === 'ex-membro') {
+      req.body.ativo = false;
+    } else if (req.body.tipoMembro === 'membro' && req.body.ativo === undefined) {
+      req.body.ativo = true;
+    } else if (req.body.ativo === false && !req.body.tipoMembro) {
+      req.body.tipoMembro = 'ex-membro';
+    }
+
     const member = await Member.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
@@ -87,7 +116,7 @@ async function deleteMember(req, res) {
   try {
     const member = await Member.findByIdAndUpdate(
       req.params.id,
-      { ativo: false },
+      { ativo: false, tipoMembro: 'ex-membro' },
       { new: true }
     );
     if (!member) return res.status(404).json({ error: 'Membro não encontrado' });

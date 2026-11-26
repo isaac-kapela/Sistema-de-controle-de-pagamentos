@@ -208,7 +208,7 @@ async function sendActivityReminderToActiveMembers(activity, isTomorrow = false,
   } else {
     recipients = await Member.find({
       ativo: true,
-      tipoMembro: { $ne: 'ex-membro' },
+      tipoMembro: 'membro',
       email: { $exists: true, $ne: '' },
     }).select('nome email');
   }
