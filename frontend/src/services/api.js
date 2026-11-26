@@ -318,4 +318,41 @@ export const syncBirthdayActivities = (data = {}) =>
 export const deleteActivity = (id) =>
   api.delete(`/activities/${id}`).then((r) => r.data);
 
+// ─── Microsabedoria (Base de Conhecimento e RAG) ─────────────
+export const getMicrosabedoriaSettings = () =>
+  api.get('/microsabedoria/settings').then((r) => r.data);
+
+export const updateMicrosabedoriaSettings = (data) =>
+  api.post('/microsabedoria/settings', data).then((r) => r.data);
+
+export const testMicrosabedoriaConnection = (data) =>
+  api.post('/microsabedoria/test-connection', data).then((r) => r.data);
+
+export const syncMicrosabedoria = (data = {}) =>
+  api.post('/microsabedoria/sync', data).then((r) => r.data);
+
+export const getMicrosabedoriaSyncStatus = () =>
+  api.get('/microsabedoria/sync-status').then((r) => r.data);
+
+export const getMicrosabedoriaDocuments = (params = {}) =>
+  api.get('/microsabedoria/documents', { params }).then((r) => r.data);
+
+export const deleteMicrosabedoriaDocument = (id) =>
+  api.delete(`/microsabedoria/documents/${id}`).then((r) => r.data);
+
+export const reindexMicrosabedoriaDocument = (id) =>
+  api.post(`/microsabedoria/documents/${id}/reindex`).then((r) => r.data);
+
+export const sendMicrosabedoriaChat = (data) =>
+  api.post('/microsabedoria/chat', data).then((r) => r.data);
+
+export const getMicrosabedoriaSessions = () =>
+  api.get('/microsabedoria/sessions').then((r) => r.data);
+
+export const getMicrosabedoriaSession = (id) =>
+  api.get(`/microsabedoria/sessions/${id}`).then((r) => r.data);
+
+export const deleteMicrosabedoriaSession = (id) =>
+  api.delete(`/microsabedoria/sessions/${id}`).then((r) => r.data);
+
 export default api;

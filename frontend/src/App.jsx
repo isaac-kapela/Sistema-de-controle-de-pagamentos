@@ -13,6 +13,7 @@ import FeedbacksPage from './pages/FeedbacksPage';
 import LogInPage from './pages/LogInPage';
 import ImportantContactsPage from './pages/ImportantContactsPage';
 import ActivitiesPage from './pages/ActivitiesPage';
+import MicrosabedoriaPage from './pages/MicrosabedoriaPage';
 
 export default function App() {
   const { isAdmin, logout } = useAuth();
@@ -67,6 +68,9 @@ export default function App() {
         <NavLink to="/feedbacks" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
           Feedbacks
         </NavLink>
+        <NavLink to="/microsabedoria" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
+          Microsabedoria
+        </NavLink>
         <NavLink to="/login" style={({ isActive }) => ({ ...s.tab, ...(isActive ? s.tabActive : {}) })}>
           Logins / Links importantes
         </NavLink>
@@ -85,6 +89,7 @@ export default function App() {
           <Route path="/cantina" element={<CantinaPage />} />
           <Route path="/estoque" element={<EstoquePage />} />
           <Route path="/feedbacks" element={<FeedbacksPage />} />
+          <Route path="/microsabedoria" element={<MicrosabedoriaPage />} />
           <Route path="/login" element={<LogInPage />} />
         </Routes>
       </main>

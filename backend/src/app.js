@@ -5,6 +5,7 @@ const cors = require('cors');
 const { startBirthdayCron } = require('./services/birthday');
 const { startMotivationalCron } = require('./services/motivational');
 const { startActivityReminderCron } = require('./services/activityReminder');
+const { startKnowledgeSyncCron } = require('./services/syncService');
 const { seedCategories }   = require('./models/StockCategory');
 const { seedDefaults: seedChargeTypes } = require('./controllers/chargeTypeController');
 
@@ -76,11 +77,13 @@ app.use('/api/charge-types', require('./routes/chargeTypes'));
 app.use('/api/financial',    require('./routes/financial'));
 app.use('/api/contacts',     require('./routes/importantContacts'));
 app.use('/api/activities',   require('./routes/activities'));
+app.use('/api/microsabedoria', require('./routes/microsabedoria'));
 
 // Inicia cron de aniversarios e motivacional semanal (a cada 7 dias)
 startBirthdayCron();
 startMotivationalCron();
 startActivityReminderCron();
+startKnowledgeSyncCron();
 
 // Seeds na primeira vez
 connectDB().then(seedCategories).catch(() => {});
