@@ -22,10 +22,13 @@ const AREAS = [
   'Todas',
   'Gestão',
   'Aerodinâmica',
+  'Desempenho',
   'Estruturas',
   'Cargas',
+  'Aeroelasticidade',
   'Estabilidade',
   'Elétrica',
+  'Plantas',
   'Material Didático',
   'Geral',
 ];
@@ -35,10 +38,13 @@ const QUICK_QUESTIONS = [
   { area: 'Gestão', text: 'Quais são os procedimentos para solicitar auxílio financeiro ou reembolso?' },
   { area: 'Gestão', text: 'Como funciona o processo seletivo da equipe?' },
   { area: 'Aerodinâmica', text: 'Qual o perfil aerodinâmico e metodologia de cálculo de sustentação utilizada pela equipe?' },
+  { area: 'Desempenho', text: 'Como é calculada a distância de decolagem, velocidade de estol e razão de subida da aeronave?' },
   { area: 'Estruturas', text: 'Quais materiais e critérios de dimensionamento estrutural são adotados para a asa e fuselagem?' },
   { area: 'Cargas', text: 'Como é calculada a envoltória de cargas e fatores de carga limite da aeronave?' },
+  { area: 'Aeroelasticidade', text: 'Quais métodos são usados para predição de flutter, divergência e reversão de comandos?' },
   { area: 'Estabilidade', text: 'Como é determinada a margem estática e a estabilidade longitudinal da aeronave?' },
   { area: 'Elétrica', text: 'Quais são os critérios de escolha do motor elétrico, bateria e ESC para o trem de força?' },
+  { area: 'Plantas', text: 'Quais são os padrões e especificações técnicas para a geração das plantas de três vistas e detalhamento?' },
 ];
 
 export default function MicrosabedoriaPage() {

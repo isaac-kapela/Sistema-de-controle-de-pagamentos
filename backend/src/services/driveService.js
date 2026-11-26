@@ -90,13 +90,22 @@ function detectAreaFromPath(folderPath = '', filename = '') {
   if (target.includes('gestão') || target.includes('gestao') || target.includes('regulamento') || target.includes('ata') || target.includes('planejamento') || target.includes('capitania') || target.includes('diretoria')) {
     return 'Gestão';
   }
+  if (target.includes('aeroelasticidade') || target.includes('aeroelástica') || target.includes('aeroelastica') || target.includes('flutter') || target.includes('divergência') || target.includes('divergencia') || target.includes('reversão') || target.includes('reversao')) {
+    return 'Aeroelasticidade';
+  }
+  if (target.includes('desempenho') || target.includes('decolagem') || target.includes('pista') || target.includes('alcance') || target.includes('autonomia') || target.includes('razao de subida') || target.includes('razão de subida') || target.includes('carga paga')) {
+    return 'Desempenho';
+  }
+  if (target.includes('planta') || target.includes('desenho técnico') || target.includes('desenho tecnico') || target.includes('3 vistas') || target.includes('três vistas') || target.includes('tres vistas') || target.includes('detalhamento') || target.includes('cad') || target.includes('solidworks')) {
+    return 'Plantas';
+  }
   if (target.includes('aerodinâmica') || target.includes('aerodinamica') || target.includes('aero') || target.includes('perfil') || target.includes('asa') || target.includes('envergadura') || target.includes('polimorfismo')) {
     return 'Aerodinâmica';
   }
   if (target.includes('estrutura') || target.includes('material') || target.includes('longarina') || target.includes('fuselagem') || target.includes('trem de pouso') || target.includes('compósito')) {
     return 'Estruturas';
   }
-  if (target.includes('carga') || target.includes('empenagem') || target.includes('envelope') || target.includes('desempenho') || target.includes('voo') || target.includes('manobra')) {
+  if (target.includes('carga') || target.includes('empenagem') || target.includes('envelope') || target.includes('voo') || target.includes('manobra')) {
     return 'Cargas';
   }
   if (target.includes('estabilidade') || target.includes('controle') || target.includes('superfície') || target.includes('superficie') || target.includes('leme') || target.includes('profundor') || target.includes('aileron')) {
