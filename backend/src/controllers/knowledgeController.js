@@ -351,11 +351,21 @@ async function chat(req, res) {
     session.messages.push({
       role: 'assistant',
       content: ragResult.answer,
-      sources: ragResult.sources || [],
+      sources: (ragResult.sources || []).map((s) => ({
+        documentName: s.documentName || 'Documento',
+        driveUrl: s.driveUrl || '',
+        folderPath: s.folderPath || '/',
+        snippet: s.snippet || '',
+        score: s.score || 0,
+      })),
       timestamp: new Date(),
     });
 
-    await session.save();
+    try {
+      await session.save();
+    } catch (saveErr) {
+      console.warn('[KnowledgeController] Aviso ao salvar histórico da sessão:', saveErr.message);
+    }
 
     res.json({
       sessionId: currentSessionId,
@@ -366,7 +376,7 @@ async function chat(req, res) {
     });
   } catch (err) {
     console.error('[KnowledgeController] Erro no chat:', err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message || 'Erro interno ao processar mensagem do chat.' });
   }
 }
 
