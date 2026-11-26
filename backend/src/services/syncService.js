@@ -8,8 +8,38 @@ const { chunkText, generateEmbeddings, getGeminiApiKey } = require('./ragService
 let isSyncing = false;
 let syncCronJob = null;
 
+// Concorrência padrão de processamento de arquivos
+const SYNC_CONCURRENCY = 6;
+// Tamanho máximo de arquivo para processamento (30MB)
+const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024;
+
 /**
- * Executa a sincronização completa ou incremental do Google Drive com o banco vetorial
+ * Ordena os arquivos priorizando documentos institucionais, regulamentos, manuais e formatos de texto
+ */
+function sortFilesByPriority(files) {
+  const priorityExts = { gdoc: 10, docx: 9, doc: 8, pdf: 7, gsheet: 6, xlsx: 5, md: 4, txt: 3 };
+
+  return [...files].sort((a, b) => {
+    // 1. Arquivos na raiz ou pastas de gestão/didática primeiro
+    const aIsRoot = a.folderPath === '/' || a.folderPath.includes('Gestão') || a.folderPath.includes('Material Didático');
+    const bIsRoot = b.folderPath === '/' || b.folderPath.includes('Gestão') || b.folderPath.includes('Material Didático');
+    if (aIsRoot && !bIsRoot) return -1;
+    if (!aIsRoot && bIsRoot) return 1;
+
+    // 2. Extensão do arquivo
+    const scoreA = priorityExts[a.fileExtension] || 0;
+    const scoreB = priorityExts[b.fileExtension] || 0;
+    if (scoreA !== scoreB) return scoreB - scoreA;
+
+    // 3. Mais recentes primeiro
+    const timeA = a.driveModifiedTime ? new Date(a.driveModifiedTime).getTime() : 0;
+    const timeB = b.driveModifiedTime ? new Date(b.driveModifiedTime).getTime() : 0;
+    return timeB - timeA;
+  });
+}
+
+/**
+ * Executa a sincronização completa ou incremental em paralelo do Google Drive com o banco vetorial
  */
 async function syncKnowledgeBase(force = false) {
   if (isSyncing) {
@@ -39,17 +69,21 @@ async function syncKnowledgeBase(force = false) {
   setting.syncProgress = { totalFiles: 0, processedFiles: 0, currentFile: 'Listando arquivos do Google Drive...' };
   await setting.save();
 
-  const stats = { added: 0, updated: 0, deleted: 0, failed: 0 };
+  const stats = { added: 0, updated: 0, deleted: 0, failed: 0, skipped: 0 };
 
   try {
     const drive = getDriveClient(setting);
 
     // 1. Lista todos os arquivos suportados recursivamente no Drive
-    const driveFiles = await listFilesRecursively(drive, folderId, '', async (msg) => {
+    const rawDriveFiles = await listFilesRecursively(drive, folderId, '', async (msg) => {
       try {
         await KnowledgeSetting.updateOne({}, { 'syncProgress.currentFile': msg });
       } catch (e) {}
     });
+
+    // Filtra arquivos excessivamente grandes que não são documentos de texto
+    const driveFiles = rawDriveFiles.filter((f) => !f.size || f.size <= MAX_FILE_SIZE_BYTES);
+
     setting.syncProgress.totalFiles = driveFiles.length;
     await setting.save();
 
@@ -65,19 +99,41 @@ async function syncKnowledgeBase(force = false) {
       }
     }
 
-    // 3. Processa cada arquivo do Drive (adiciona ou atualiza)
+    // 3. Mapeia documentos existentes no banco para verificação incremental ultrarrápida
+    const existingDocMap = new Map();
+    const currentIndexedDocs = await KnowledgeDocument.find().lean();
+    currentIndexedDocs.forEach((d) => existingDocMap.set(d.driveFileId, d));
+
+    // 4. Ordena os arquivos por prioridade
+    const prioritizedFiles = sortFilesByPriority(driveFiles);
+
     let processedCount = 0;
+    let lastProgressUpdate = Date.now();
 
-    for (const fileMeta of driveFiles) {
+    // Função auxiliar para atualizar progresso sem sobrecarregar o banco
+    const updateProgressThrottled = async (currentFileName) => {
       processedCount++;
-      setting.syncProgress.processedFiles = processedCount;
-      setting.syncProgress.currentFile = fileMeta.name;
-      await setting.save();
+      const now = Date.now();
+      if (now - lastProgressUpdate > 1200 || processedCount === prioritizedFiles.length) {
+        lastProgressUpdate = now;
+        try {
+          await KnowledgeSetting.updateOne(
+            {},
+            {
+              'syncProgress.processedFiles': processedCount,
+              'syncProgress.currentFile': currentFileName,
+            }
+          );
+        } catch (e) {}
+      }
+    };
 
+    // 5. Função de processamento individual de arquivo
+    const processSingleFile = async (fileMeta) => {
       try {
-        const existingDoc = await KnowledgeDocument.findOne({ driveFileId: fileMeta.driveFileId });
+        const existingDoc = existingDocMap.get(fileMeta.driveFileId);
 
-        // Verifica se precisa reprocessar (se for novo ou se modifiedTime do Drive mudou ou se force=true)
+        // Verifica se precisa reprocessar
         const isModified =
           !existingDoc ||
           force ||
@@ -88,11 +144,13 @@ async function syncKnowledgeBase(force = false) {
             new Date(fileMeta.driveModifiedTime).getTime() > new Date(existingDoc.driveModifiedTime).getTime());
 
         if (!isModified) {
-          continue;
+          stats.skipped++;
+          await updateProgressThrottled(fileMeta.name);
+          return;
         }
 
         // Salva documento em estado de processamento
-        let docRecord = existingDoc;
+        let docRecord = await KnowledgeDocument.findOne({ driveFileId: fileMeta.driveFileId });
         if (!docRecord) {
           docRecord = new KnowledgeDocument({
             driveFileId: fileMeta.driveFileId,
@@ -120,7 +178,7 @@ async function syncKnowledgeBase(force = false) {
         }
         await docRecord.save();
 
-        // 4. Extrai o texto do arquivo
+        // Extrai o texto do arquivo
         const rawText = await extractFileText(drive, fileMeta);
 
         if (!rawText || rawText.trim().length === 0) {
@@ -129,24 +187,25 @@ async function syncKnowledgeBase(force = false) {
           docRecord.characterCount = 0;
           docRecord.indexedAt = new Date();
           await docRecord.save();
-          continue;
+          await updateProgressThrottled(fileMeta.name);
+          return;
         }
 
-        // 5. Divide em Chunks
+        // Divide em Chunks
         const chunks = chunkText(rawText);
 
         // Remove chunks antigos do documento
         await KnowledgeChunk.deleteMany({ documentId: docRecord._id });
 
-        // 6. Gera embeddings para os chunks (limita a no máximo 60 embeddings por documento para não saturar a cota de taxa)
+        // Gera embeddings para os chunks em lote (limita até 50 embeddings prioritários por documento)
         let embeddings = [];
         if (geminiApiKey && chunks.length > 0) {
-          const chunksToEmbed = chunks.slice(0, 60);
+          const chunksToEmbed = chunks.slice(0, 50);
           const chunkTexts = chunksToEmbed.map((c) => `${fileMeta.name} (${fileMeta.folderPath}):\n${c.content}`);
           embeddings = await generateEmbeddings(chunkTexts, geminiApiKey);
         }
 
-        // 7. Salva chunks no MongoDB
+        // Salva chunks no MongoDB
         const chunkDocs = chunks.map((c, idx) => ({
           documentId: docRecord._id,
           driveFileId: fileMeta.driveFileId,
@@ -164,7 +223,7 @@ async function syncKnowledgeBase(force = false) {
           await KnowledgeChunk.insertMany(chunkDocs);
         }
 
-        // 8. Atualiza documento como indexado
+        // Atualiza documento como indexado
         docRecord.status = 'indexed';
         docRecord.chunkCount = chunks.length;
         docRecord.characterCount = rawText.length;
@@ -193,10 +252,25 @@ async function syncKnowledgeBase(force = false) {
           },
           { upsert: true, new: true }
         );
+      } finally {
+        await updateProgressThrottled(fileMeta.name);
       }
-    }
+    };
 
-    // Atualiza estatísticas finais no setting
+    // 6. Pool de Execução Paralela com limite de concorrência
+    const queue = [...prioritizedFiles];
+    const workers = Array.from({ length: SYNC_CONCURRENCY }, async () => {
+      while (queue.length > 0) {
+        const item = queue.shift();
+        if (item) {
+          await processSingleFile(item);
+        }
+      }
+    });
+
+    await Promise.all(workers);
+
+    // 7. Atualiza estatísticas finais no setting
     const totalDocs = await KnowledgeDocument.countDocuments({ status: 'indexed' });
     const totalChunks = await KnowledgeChunk.countDocuments();
 
@@ -219,9 +293,12 @@ async function syncKnowledgeBase(force = false) {
     isSyncing = false;
     console.error('[SyncService] Erro durante a sincronização:', err.message);
 
-    setting.syncStatus = 'error';
-    setting.syncError = err.message;
-    await setting.save();
+    try {
+      setting.syncStatus = 'error';
+      setting.syncError = err.message;
+      await setting.save();
+    } catch (e) {}
+
     throw err;
   }
 }
