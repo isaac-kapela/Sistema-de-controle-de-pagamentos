@@ -75,11 +75,13 @@ async function testConnection(req, res) {
   try {
     const { driveFolderUrl, serviceAccountJson, googleApiKey, geminiApiKey } = req.body;
 
+    const currentSetting = await KnowledgeSetting.findOne().lean();
+
     const setting = {
-      driveFolderUrl,
-      serviceAccountJson,
-      googleApiKey,
-      geminiApiKey,
+      driveFolderUrl: driveFolderUrl || currentSetting?.driveFolderUrl,
+      serviceAccountJson: serviceAccountJson || currentSetting?.serviceAccountJson,
+      googleApiKey: googleApiKey || currentSetting?.googleApiKey,
+      geminiApiKey: geminiApiKey || currentSetting?.geminiApiKey,
     };
 
     const results = {
@@ -88,7 +90,7 @@ async function testConnection(req, res) {
     };
 
     // 1. Testa Google Drive
-    if (driveFolderUrl) {
+    if (setting.driveFolderUrl) {
       try {
         const driveRes = await testDriveAccess(setting);
         results.drive = { ok: true, message: driveRes.message, folderName: driveRes.folderName };
@@ -100,7 +102,7 @@ async function testConnection(req, res) {
     }
 
     // 2. Testa Gemini API
-    const keyToTest = geminiApiKey || (await getGeminiApiKey());
+    const keyToTest = setting.geminiApiKey || (await getGeminiApiKey());
     if (keyToTest) {
       try {
         const genAI = new GoogleGenerativeAI(keyToTest);
@@ -134,7 +136,7 @@ async function testConnection(req, res) {
       results.gemini = { ok: false, message: 'Nenhuma chave de API do Gemini informada.' };
     }
 
-    res.json({ success: results.drive.ok || results.gemini.ok, results });
+    res.json({ success: results.drive.ok && results.gemini.ok, results });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

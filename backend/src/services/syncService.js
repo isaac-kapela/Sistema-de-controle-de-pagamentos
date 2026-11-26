@@ -45,7 +45,11 @@ async function syncKnowledgeBase(force = false) {
     const drive = getDriveClient(setting);
 
     // 1. Lista todos os arquivos suportados recursivamente no Drive
-    const driveFiles = await listFilesRecursively(drive, folderId);
+    const driveFiles = await listFilesRecursively(drive, folderId, '', async (msg) => {
+      try {
+        await KnowledgeSetting.updateOne({}, { 'syncProgress.currentFile': msg });
+      } catch (e) {}
+    });
     setting.syncProgress.totalFiles = driveFiles.length;
     await setting.save();
 

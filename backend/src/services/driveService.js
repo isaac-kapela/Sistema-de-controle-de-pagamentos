@@ -98,62 +98,75 @@ function getFileExtension(mimeType, filename = '') {
 /**
  * Percorre recursivamente todas as pastas e subpastas a partir de uma pasta raiz no Google Drive
  */
-async function listFilesRecursively(drive, folderId, currentPath = '') {
+async function listFilesRecursively(drive, folderId, currentPath = '', onProgress = null) {
   const allFiles = [];
   const queue = [{ folderId, folderPath: currentPath || '' }];
   const visitedFolders = new Set();
+  let folderCount = 0;
 
   while (queue.length > 0) {
-    const current = queue.shift();
-    if (visitedFolders.has(current.folderId)) continue;
-    visitedFolders.add(current.folderId);
+    // Processa lotes de pastas concorrentemente para maior rapidez
+    const batch = queue.splice(0, 4);
 
-    let pageToken = null;
-    do {
-      try {
-        const res = await drive.files.list({
-          q: `'${current.folderId}' in parents and trashed = false`,
-          fields: 'nextPageToken, files(id, name, mimeType, webViewLink, webContentLink, size, modifiedTime, parents, description)',
-          pageSize: 100,
-          pageToken: pageToken || undefined,
-          supportsAllDrives: true,
-          includeItemsFromAllDrives: true,
-        });
+    await Promise.all(
+      batch.map(async (current) => {
+        if (visitedFolders.has(current.folderId)) return;
+        visitedFolders.add(current.folderId);
+        folderCount++;
 
-        const files = res.data.files || [];
-        for (const file of files) {
-          if (file.mimeType === 'application/vnd.google-apps.folder') {
-            const nextPath = current.folderPath
-              ? `${current.folderPath}/${file.name}`
-              : file.name;
-            queue.push({
-              folderId: file.id,
-              folderPath: nextPath,
-            });
-          } else if (isFileSupported(file.mimeType, file.name)) {
-            allFiles.push({
-              driveFileId: file.id,
-              name: file.name,
-              mimeType: file.mimeType,
-              fileExtension: getFileExtension(file.mimeType, file.name),
-              driveUrl: file.webViewLink || `https://drive.google.com/file/d/${file.id}/view`,
-              downloadUrl: file.webContentLink || '',
-              folderPath: current.folderPath ? `/${current.folderPath}` : '/',
-              folderId: current.folderId,
-              size: file.size ? parseInt(file.size, 10) : 0,
-              driveModifiedTime: file.modifiedTime ? new Date(file.modifiedTime) : new Date(),
-            });
-          }
+        if (onProgress) {
+          onProgress(`Explorando pasta: ${current.folderPath || 'raiz'} (${allFiles.length} arquivos encontrados)`);
         }
 
-        pageToken = res.data.nextPageToken;
-      } catch (err) {
-        console.error(`[DriveService] Erro ao listar arquivos da pasta ${current.folderId}:`, err.message);
-        break;
-      }
-    } while (pageToken);
+        let pageToken = null;
+        do {
+          try {
+            const res = await drive.files.list({
+              q: `'${current.folderId}' in parents and trashed = false`,
+              fields: 'nextPageToken, files(id, name, mimeType, webViewLink, webContentLink, size, modifiedTime, parents, description)',
+              pageSize: 100,
+              pageToken: pageToken || undefined,
+              supportsAllDrives: true,
+              includeItemsFromAllDrives: true,
+            });
+
+            const files = res.data.files || [];
+            for (const file of files) {
+              if (file.mimeType === 'application/vnd.google-apps.folder') {
+                const nextPath = current.folderPath
+                  ? `${current.folderPath}/${file.name}`
+                  : file.name;
+                queue.push({
+                  folderId: file.id,
+                  folderPath: nextPath,
+                });
+              } else if (isFileSupported(file.mimeType, file.name)) {
+                allFiles.push({
+                  driveFileId: file.id,
+                  name: file.name,
+                  mimeType: file.mimeType,
+                  fileExtension: getFileExtension(file.mimeType, file.name),
+                  driveUrl: file.webViewLink || `https://drive.google.com/file/d/${file.id}/view`,
+                  downloadUrl: file.webContentLink || '',
+                  folderPath: current.folderPath ? `/${current.folderPath}` : '/',
+                  folderId: current.folderId,
+                  size: file.size ? parseInt(file.size, 10) : 0,
+                  driveModifiedTime: file.modifiedTime ? new Date(file.modifiedTime) : new Date(),
+                });
+              }
+            }
+
+            pageToken = res.data.nextPageToken;
+          } catch (err) {
+            console.error(`[DriveService] Erro ao listar arquivos da pasta ${current.folderId}:`, err.message);
+            break;
+          }
+        } while (pageToken);
+      })
+    );
   }
 
+  console.log(`[DriveService] Concluída varredura de ${folderCount} pastas. Total de ${allFiles.length} arquivos catalogados.`);
   return allFiles;
 }
 
