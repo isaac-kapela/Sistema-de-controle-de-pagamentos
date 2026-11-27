@@ -8,10 +8,10 @@ const { chunkText, generateEmbeddings, getGeminiApiKey } = require('./ragService
 let isSyncing = false;
 let syncCronJob = null;
 
-// Concorrência padrão de processamento de arquivos
-const SYNC_CONCURRENCY = 6;
-// Tamanho máximo de arquivo para processamento (30MB)
-const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024;
+// Concorrência padrão de processamento de arquivos (otimizada para consumo estável de memória)
+const SYNC_CONCURRENCY = 3;
+// Tamanho máximo de arquivo para processamento (20MB)
+const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 
 /**
  * Ordena os arquivos priorizando documentos institucionais, regulamentos, manuais e formatos de texto
@@ -193,8 +193,9 @@ async function syncKnowledgeBase(force = false) {
           return;
         }
 
-        // Divide em Chunks
-        const chunks = chunkText(rawText);
+        // Divide em Chunks (limita a 100 chunks mais relevantes por documento para economia de memória e storage)
+        const allChunks = chunkText(rawText);
+        const chunks = allChunks.slice(0, 100);
 
         // Remove chunks antigos do documento
         await KnowledgeChunk.deleteMany({ documentId: docRecord._id });

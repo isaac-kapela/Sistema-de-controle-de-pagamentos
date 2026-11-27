@@ -137,6 +137,21 @@ function isNoiseFolder(folderName = '', folderPath = '') {
     '__pycache__',
     '.git',
     'node_modules',
+    'cfd',
+    'fea',
+    'ansys',
+    'xflr5',
+    'avl',
+    'openvsp',
+    'resultados_',
+    'malha_',
+    'simulacao',
+    'simulação',
+    'dados_brutos',
+    'backups',
+    'backup',
+    'export_',
+    'output_',
   ];
 
   return noisePatterns.some((pattern) => combined.includes(pattern));
@@ -279,9 +294,9 @@ async function extractFileText(drive, fileMeta) {
 
     const ext = getFileExtension(mimeType, name);
 
-    // Extração para PDF
+    // Extração para PDF (limita a 40 páginas para livros/manuais gigantes não estourarem memória)
     if (mimeType === 'application/pdf' || ext === 'pdf') {
-      const parsed = await pdfParse(buffer);
+      const parsed = await pdfParse(buffer, { max: 40 });
       return parsed.text || '';
     }
 
