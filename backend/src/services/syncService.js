@@ -306,10 +306,30 @@ async function syncKnowledgeBase(force = false) {
   }
 }
 
+function getIsSyncing() {
+  return isSyncing;
+}
+
 /**
  * Inicializa a rotina de sincronização automática com base no intervalo configurado
  */
-function startKnowledgeSyncCron() {
+async function startKnowledgeSyncCron() {
+  // Limpa status residual de sincronizações anteriores se o servidor reiniciou
+  try {
+    const setting = await KnowledgeSetting.findOne();
+    if (setting && setting.syncStatus === 'syncing') {
+      setting.syncStatus = 'success';
+      setting.syncProgress = {
+        totalFiles: setting.totalDocuments || 0,
+        processedFiles: setting.totalDocuments || 0,
+        currentFile: 'Pronto para uso.',
+      };
+      await setting.save();
+    }
+  } catch (err) {
+    console.warn('[SyncService] Aviso ao resetar status residual:', err.message);
+  }
+
   if (syncCronJob) {
     syncCronJob.stop();
   }
@@ -333,4 +353,5 @@ function startKnowledgeSyncCron() {
 module.exports = {
   syncKnowledgeBase,
   startKnowledgeSyncCron,
+  getIsSyncing,
 };

@@ -5,7 +5,7 @@ const KnowledgeChunk = require('../models/KnowledgeChunk');
 const ChatSession = require('../models/ChatSession');
 const { testDriveAccess, getDriveClient, extractFileText } = require('../services/driveService');
 const { generateRAGAnswer, chunkText, generateEmbeddings, getGeminiApiKey } = require('../services/ragService');
-const { syncKnowledgeBase } = require('../services/syncService');
+const { syncKnowledgeBase, getIsSyncing } = require('../services/syncService');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 /**
@@ -172,9 +172,10 @@ async function getSyncStatus(req, res) {
     const totalDocs = await KnowledgeDocument.countDocuments({ status: 'indexed' });
     const totalChunks = await KnowledgeChunk.countDocuments();
     const errorDocs = await KnowledgeDocument.countDocuments({ status: 'error' });
+    const isCurrentlySyncing = getIsSyncing();
 
     res.json({
-      syncStatus: setting?.syncStatus || 'idle',
+      syncStatus: isCurrentlySyncing ? 'syncing' : (setting?.syncStatus === 'syncing' ? 'success' : setting?.syncStatus || 'idle'),
       syncProgress: setting?.syncProgress || {},
       syncError: setting?.syncError || '',
       lastSyncAt: setting?.lastSyncAt || null,
